@@ -657,8 +657,14 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     line-height: 1.5;
     color: #111;
     margin: 0;
+    text-align: left;
   }
-  p { margin: 0 0 10px; }
+  /* Paksa rata kiri sebagai default, supaya tidak ikut gaya bawaan
+     Word (Normal.dotm) yang di sebagian instalasi bisa berupa
+     Justify/Distribute dan meregangkan tiap huruf. Paragraf yang
+     memang sengaja kamu buat rata tengah/kanan/justify lewat toolbar
+     tetap terjaga karena style-nya nempel inline (lebih spesifik). */
+  p, div, li, h1, h2, h3, td, th { text-align: left; }
   h1 { font-size: 24pt; font-weight: 600; margin: 0.6em 0 0.3em; }
   h2 { font-size: 18pt; font-weight: 600; margin: 0.6em 0 0.3em; }
   h3 { font-size: 14pt; font-weight: 600; margin: 0.6em 0 0.3em; }
