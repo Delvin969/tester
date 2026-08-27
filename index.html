@@ -53,6 +53,149 @@
   input[type="color"] { width: 32px; height: 28px; padding: 2px; cursor: pointer; }
   input[type="number"] { width: 50px; }
   .mini-label { font-size: 11px; color: #555; }
+  #tabbar {
+    display: flex;
+    gap: 2px;
+    background: #f3f3f3;
+    padding: 6px 10px 0;
+    border-bottom: 1px solid #c8c8c8;
+  }
+  .tab-btn {
+    background: transparent;
+    border: none;
+    border-radius: 4px 4px 0 0;
+    padding: 7px 18px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #444;
+  }
+  .tab-btn:hover { background: #e3f0fd; }
+  .tab-btn.active {
+    background: #fff;
+    color: #2b579a;
+    font-weight: 600;
+    border: 1px solid #c8c8c8;
+    border-bottom: 1px solid #fff;
+    margin-bottom: -1px;
+  }
+  .tab-btn.file-tab {
+    background: #2b579a;
+    color: white;
+    font-weight: 600;
+  }
+  .tab-btn.file-tab:hover { background: #1e4173; }
+  #backstage {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #2b579a;
+    z-index: 999;
+    color: white;
+  }
+  #backstage.show { display: flex; }
+  #backstage-sidebar {
+    width: 220px;
+    background: #1e4173;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+  }
+  #backstage-sidebar button {
+    background: transparent;
+    border: none;
+    color: white;
+    text-align: left;
+    padding: 12px 24px;
+    font-size: 14px;
+    cursor: pointer;
+    width: 100%;
+  }
+  #backstage-sidebar button:hover { background: #2b579a; }
+  #backstage-sidebar button.active { background: #f3f3f3; color: #1e4173; font-weight: 600; }
+  #backstage-main {
+    flex: 1;
+    background: #f3f3f3;
+    color: #222;
+    padding: 30px 50px;
+    overflow-y: auto;
+  }
+  #backstage-main h1 { font-weight: 400; margin-top: 0; }
+  .template-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 20px 0 30px; }
+  .template-card {
+    width: 140px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .template-card .thumb {
+    width: 140px;
+    height: 180px;
+    background: white;
+    border: 1px solid #ccc;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #999;
+  }
+  .template-card:hover .thumb { border-color: #2b7de9; }
+  .recent-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .recent-table th { text-align: left; padding: 6px 8px; border-bottom: 1px solid #ccc; color: #555; font-weight: 600; }
+  .recent-table td { padding: 8px; border-bottom: 1px solid #e0e0e0; }
+  .recent-table tr:hover { background: #e8f0fe; cursor: pointer; }
+  .ribbon-panel { display: none; }
+  .ribbon-panel.active { display: flex; }
+  .textbox {
+    display: inline-block;
+    min-width: 120px;
+    min-height: 40px;
+    border: 1px dashed #888;
+    padding: 8px;
+    margin: 4px;
+    resize: both;
+    overflow: auto;
+    vertical-align: top;
+    cursor: move;
+  }
+  #tableToolbar {
+    position: fixed;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: #333;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    z-index: 500;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  #tableToolbar.show { display: flex; }
+  #tableToolbar button {
+    background: #555;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    font-size: 11px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  #tableToolbar button:hover { background: #d9534f; }
+  #tableToolbar input[type="color"] { width: 24px; height: 24px; padding: 0; border: none; cursor: pointer; }
+  #tableToolbar .drag-hint { cursor: grab; font-size: 15px; touch-action: none; user-select: none; }
+  .shape-rect { display:inline-block; width:120px; height:80px; border:2px solid #333; margin:4px; vertical-align:middle; }
+  .shape-circle { display:inline-block; width:90px; height:90px; border:2px solid #333; border-radius:50%; margin:4px; vertical-align:middle; }
+  .shape-line { display:block; width:200px; height:0; border-top:2px solid #333; margin:12px 4px; }
+  .page-header-area {
+    font-size: 10px;
+    color: #888;
+    text-align: center;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+    outline: none;
+    min-height: 14px;
+  }
   #statusbar {
     background: #2b579a;
     color: white;
@@ -130,7 +273,18 @@
 </head>
 <body>
 
+<div id="tabbar">
+  <button class="tab-btn file-tab" id="fileTabBtn">File</button>
+  <button class="tab-btn active" data-tab="home">Beranda</button>
+  <button class="tab-btn" data-tab="insert">Sisipkan</button>
+  <button class="tab-btn" data-tab="design">Desain</button>
+  <button class="tab-btn" data-tab="layout">Tata Letak</button>
+  <button class="tab-btn" data-tab="references">Referensi</button>
+  <button class="tab-btn" data-tab="mailings">Mailings</button>
+</div>
+
 <div id="ribbon">
+<div class="ribbon-panel active" id="tab-home">
   <div class="group">
     <select id="fontName" title="Font">
       <option>Calibri</option><option>Arial</option><option>Georgia</option>
@@ -189,16 +343,9 @@
     <input type="color" id="hiliteColor" title="Highlight" value="#ffff00" />
   </div>
   <div class="group">
-    <button id="insertTableBtn">Tabel</button>
-    <button id="insertImageBtn">🖼️ Gambar</button>
-    <button id="insertHrBtn" title="Sisip garis">─ Garis</button>
-    <button id="insertDateBtn" title="Sisip tanggal hari ini">📅 Tanggal</button>
-    <button id="findReplaceBtn" title="Cari & Ganti">🔍 Cari</button>
-  </div>
-  <div class="group">
-    <button id="newPageBtn" style="background:#2b7de9;color:white;font-weight:bold;">📄 + Tambah Halaman</button>
     <button data-cmd="undo">↶</button>
     <button data-cmd="redo">↷</button>
+    <button id="findReplaceBtn" title="Cari & Ganti">🔍 Cari</button>
     <button id="printBtn">🖨️ Print</button>
   </div>
   <div class="group">
@@ -226,14 +373,182 @@
     <button id="openBtn">Buka File</button>
     <button id="saveBtn" style="background:#2b7de9;color:white;font-weight:bold;">💾 Simpan (.doc)</button>
   </div>
-  <input type="file" id="fileInput" accept=".docx,.doc,.html,.htm,.txt" />
-  <input type="file" id="imageInput" accept="image/*" />
+</div>
+
+<div class="ribbon-panel" id="tab-insert">
+  <div class="group">
+    <button id="blankPageBtn">📄 Halaman Kosong</button>
+    <button id="pageBreakInsertBtn">⏎ Page Break</button>
+  </div>
+  <div class="group">
+    <button id="insertTableBtn">▦ Tabel</button>
+    <button id="insertImageBtn">🖼️ Gambar</button>
+  </div>
+  <div class="group">
+    <select id="shapeSelect" title="Sisipkan Bentuk">
+      <option value="">Shapes...</option>
+      <option value="rect">▭ Rectangle</option>
+      <option value="roundrect">▢ Rounded Rectangle</option>
+      <option value="oval">◯ Oval</option>
+      <option value="triangle">△ Triangle</option>
+      <option value="diamond">◇ Diamond</option>
+      <option value="arrow-right">→ Panah Kanan</option>
+      <option value="arrow-left">← Panah Kiri</option>
+      <option value="arrow-up">↑ Panah Atas</option>
+      <option value="arrow-down">↓ Panah Bawah</option>
+      <option value="arrow-double">↔ Panah Dua Arah</option>
+      <option value="star">★ Bintang</option>
+      <option value="callout">💬 Callout</option>
+      <option value="line">─ Garis Lurus</option>
+      <option value="pentagon">⬠ Pentagon</option>
+      <option value="cross">✚ Tanda Plus</option>
+    </select>
+    <button id="hrLineBtn" title="Sisip garis horizontal penuh">─ Garis</button>
+  </div>
+  <div class="group">
+    <button id="textBoxBtn">📝 Text Box</button>
+  </div>
+  <div class="group">
+    <button id="headerBtn">Header</button>
+    <button id="footerToggleBtn">Footer</button>
+    <button id="pageNumberInsertBtn">Page Number</button>
+  </div>
+  <div class="group">
+    <button id="insertDateBtn">📅 Date &amp; Time</button>
+  </div>
+  <div class="group">
+    <select id="symbolSelect" title="Symbol">
+      <option value="">Symbol...</option>
+      <option value="©">© Copyright</option>
+      <option value="®">® Registered</option>
+      <option value="™">™ Trademark</option>
+      <option value="€">€ Euro</option>
+      <option value="£">£ Pound</option>
+      <option value="¥">¥ Yen</option>
+      <option value="§">§ Section</option>
+      <option value="¶">¶ Paragraph</option>
+      <option value="•">• Bullet</option>
+      <option value="†">† Dagger</option>
+      <option value="±">± Plus-minus</option>
+      <option value="∞">∞ Infinity</option>
+      <option value="½">½ Half</option>
+      <option value="α">α Alpha</option>
+      <option value="β">β Beta</option>
+      <option value="→">→ Arrow</option>
+    </select>
+  </div>
+</div>
+
+<div class="ribbon-panel" id="tab-design">
+  <div class="group">
+    <span class="mini-label">Warna Halaman:</span>
+    <input type="color" id="pageColorPicker" value="#ffffff" />
+  </div>
+  <div class="group">
+    <button id="pageBorderBtn">▢ Page Borders</button>
+  </div>
+  <div class="group">
+    <button id="watermarkBtn">Watermark</button>
+  </div>
+</div>
+
+<div class="ribbon-panel" id="tab-layout">
+  <div class="group">
+    <span class="mini-label">Orientasi:</span>
+    <select id="orientationSelect">
+      <option value="portrait">Portrait</option>
+      <option value="landscape">Landscape</option>
+    </select>
+  </div>
+  <div class="group">
+    <span class="mini-label">Margin Cepat:</span>
+    <button id="marginPresetNormal">Normal</button>
+    <button id="marginPresetNarrow">Sempit</button>
+    <button id="marginPresetWide">Lebar</button>
+  </div>
+  <div class="group">
+    <span class="mini-label">Kolom:</span>
+    <select id="columnsSelect">
+      <option value="1">Satu</option>
+      <option value="2">Dua</option>
+      <option value="3">Tiga</option>
+    </select>
+  </div>
+</div>
+
+<div class="ribbon-panel" id="tab-references">
+  <div class="group">
+    <button id="tocBtn">📑 Daftar Isi Otomatis</button>
+  </div>
+  <div class="group">
+    <button id="citationBtn">Insert Citation</button>
+    <button id="footnoteBtn">Insert Footnote</button>
+  </div>
+</div>
+
+<div class="ribbon-panel" id="tab-mailings">
+  <div class="group">
+    <button id="mailMergeInfoBtn">Start Mail Merge</button>
+    <button id="mailMergeInfoBtn2">Insert Merge Field</button>
+  </div>
+</div>
+
+</div>
+
+<div id="backstage">
+  <div id="backstage-sidebar">
+    <button id="bsBackBtn" style="font-size:20px;padding:12px 24px;">←</button>
+    <button class="active" data-bs="home">Home</button>
+    <button data-bs="new">New</button>
+    <button data-bs="open">Open</button>
+    <button id="bsPrintBtn">Print</button>
+    <button id="bsCloseBtn">Close</button>
+  </div>
+  <div id="backstage-main">
+    <h1>Good morning</h1>
+    <div style="margin-bottom:10px;font-weight:600;">New</div>
+    <div class="template-row">
+      <div class="template-card" id="bsBlankDoc">
+        <div class="thumb" style="background:white;"></div>
+        <div>Blank document</div>
+      </div>
+      <div class="template-card">
+        <div class="thumb">Resume</div>
+        <div>Modern resume</div>
+      </div>
+      <div class="template-card">
+        <div class="thumb">Calendar</div>
+        <div>Snapshot calendar</div>
+      </div>
+      <div class="template-card">
+        <div class="thumb">Report</div>
+        <div>Simple report</div>
+      </div>
+    </div>
+    <div style="font-weight:600;margin-bottom:6px;">Recent</div>
+    <table class="recent-table">
+      <thead><tr><th>Name</th><th>Modified</th></tr></thead>
+      <tbody id="recentFilesBody">
+        <tr><td colspan="2" style="color:#999;">Belum ada dokumen yang dibuka/disimpan sesi ini.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="tableToolbar">
+  <span class="drag-hint" title="Tabel bisa diseret (drag) untuk dipindah">⠿ Seret tabel</span>
+  <span>Warna garis:</span>
+  <input type="color" id="tableBorderColor" value="#999999" />
+  <button id="tableDeleteBtn">✕ Hapus Tabel</button>
 </div>
 
 <div id="statusbar">
   <span id="statusText">Dokumen Baru</span>
   <span id="wordCount">0 kata</span>
 </div>
+
+<input type="file" id="fileInput" accept=".docx,.doc,.html,.htm,.txt" />
+<input type="file" id="imageInput" accept="image/*" />
 
 <div id="page-wrap"></div>
 
@@ -260,23 +575,35 @@ const paperSizesPx = {
 };
 let currentMarginPx = { top: 96, right: 96, bottom: 96, left: 96 }; // 2.54cm default
 let lastFocusedPage = null;
-let savedRange = null;
 
-function saveCurrentSelection() {
-  const sel = window.getSelection();
-  if (!sel.rangeCount) return;
-  const range = sel.getRangeAt(0);
-  if (range.collapsed) return;
-  const node = range.commonAncestorContainer;
-  const el = node.nodeType === 3 ? node.parentElement : node;
-  if (el && el.closest && el.closest('.page')) {
-    savedRange = range.cloneRange();
+// Each toolbar control that needs a text selection gets its OWN tracker,
+// so applying font size doesn't stomp on the range line-spacing needs (and
+// vice versa) -- that cross-contamination was why line spacing looked broken.
+function createSelectionTracker() {
+  let range = null;
+  function capture() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const r = sel.getRangeAt(0);
+    if (r.collapsed) return;
+    const node = r.commonAncestorContainer;
+    const el = node.nodeType === 3 ? node.parentElement : node;
+    if (el && el.closest && el.closest('.page')) {
+      range = r.cloneRange();
+    }
   }
+  return { capture, get: () => range, set: (r) => { range = r; } };
 }
 
-function attachSelectionCapture(el) {
-  el.addEventListener('mousedown', saveCurrentSelection);
-  el.addEventListener('focus', saveCurrentSelection);
+const fontSizeTracker = createSelectionTracker();
+const lineSpacingTracker = createSelectionTracker();
+const textCaseTracker = createSelectionTracker();
+const trackers = [fontSizeTracker, lineSpacingTracker, textCaseTracker];
+function captureAllTrackers() { trackers.forEach(t => t.capture()); }
+
+function attachSelectionCapture(el, tracker) {
+  el.addEventListener('mousedown', tracker.capture);
+  el.addEventListener('focus', tracker.capture);
 }
 
 function closestPageFromRange(range) {
@@ -337,10 +664,6 @@ function createPage(initialHtml, afterWrapper) {
   page.style.minHeight = size.minHeight + 'px';
   page.style.padding = `${m.top}px ${m.right}px ${m.bottom}px ${m.left}px`;
   page.innerHTML = initialHtml || '<p><br></p>';
-  page.addEventListener('focus', () => { lastFocusedPage = page; });
-  page.addEventListener('input', updateWordCount);
-  page.addEventListener('mouseup', saveCurrentSelection);
-  page.addEventListener('keyup', saveCurrentSelection);
   wrapper.appendChild(page);
 
   const footer = document.createElement('div');
@@ -351,11 +674,6 @@ function createPage(initialHtml, afterWrapper) {
   const addBtn = document.createElement('button');
   addBtn.className = 'add-page-under';
   addBtn.textContent = '+ Tambah Halaman Baru di Sini';
-  addBtn.addEventListener('click', () => {
-    const p = createPage('<p><br></p>', wrapper);
-    p.focus();
-    p.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
   wrapper.appendChild(addBtn);
 
   if (afterWrapper && afterWrapper.nextSibling) {
@@ -372,7 +690,9 @@ function renumberPages() {
   const total = wrappers.length;
   wrappers.forEach((w, i) => {
     w.querySelector('.page-label').textContent = 'Halaman ' + (i + 1);
-    w.querySelector('.page-footer').textContent = `Halaman ${i + 1} dari ${total}`;
+    const footer = w.querySelector('.page-footer');
+    const custom = footer.dataset.customText;
+    footer.textContent = custom ? `${custom} — Halaman ${i + 1} dari ${total}` : `Halaman ${i + 1} dari ${total}`;
   });
 }
 
@@ -380,14 +700,216 @@ function getAllPages() {
   return Array.from(document.querySelectorAll('.page'));
 }
 
-document.getElementById('newPageBtn').addEventListener('click', () => {
-  const pages = getAllPages();
-  const refPage = lastFocusedPage && pages.includes(lastFocusedPage) ? lastFocusedPage : pages[pages.length - 1];
-  const refWrapper = refPage ? refPage.closest('.page-wrapper') : null;
-  const newPage = createPage('<p><br></p>', refWrapper);
-  newPage.focus();
-  newPage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+// =====================================================================
+// UNDO / REDO — snapshot seluruh isi dokumen, jadi SEMUA aksi (ketik,
+// insert tabel/gambar/shape, ubah warna, hapus, dsb) bisa di-undo, bukan
+// cuma yang tercatat oleh undo bawaan browser.
+// =====================================================================
+let undoStack = [];
+let redoStack = [];
+let lastSnapshot = null;
+let snapshotDebounce = null;
+
+function commitNow() {
+  clearTimeout(snapshotDebounce);
+  const current = pageWrap.innerHTML;
+  if (lastSnapshot !== null && current !== lastSnapshot) {
+    undoStack.push(lastSnapshot);
+    if (undoStack.length > 150) undoStack.shift();
+    redoStack = [];
+  }
+  lastSnapshot = current;
+}
+
+function scheduleSnapshot() {
+  clearTimeout(snapshotDebounce);
+  snapshotDebounce = setTimeout(commitNow, 500);
+}
+
+function restoreSnapshot(html) {
+  pageWrap.innerHTML = html;
+  lastSnapshot = html;
+  renumberPages();
+  updateWordCount();
+  tableToolbar.classList.remove('show');
+  activeTable = null;
+}
+
+function performUndo() {
+  commitNow();
+  if (undoStack.length === 0) { showToast('Tidak ada lagi yang bisa di-undo.'); return; }
+  redoStack.push(lastSnapshot);
+  restoreSnapshot(undoStack.pop());
+}
+
+function performRedo() {
+  if (redoStack.length === 0) { showToast('Tidak ada lagi yang bisa di-redo.'); return; }
+  undoStack.push(lastSnapshot);
+  restoreSnapshot(redoStack.pop());
+}
+
+// Delegated listeners on pageWrap — these survive undo/redo's innerHTML
+// replacement since they're bound to the container, not individual pages.
+pageWrap.addEventListener('focusin', (e) => {
+  const page = e.target.closest('.page');
+  if (page) lastFocusedPage = page;
 });
+pageWrap.addEventListener('input', (e) => {
+  if (e.target.closest('.page')) { updateWordCount(); scheduleAutoSave(); scheduleSnapshot(); }
+});
+pageWrap.addEventListener('mouseup', (e) => {
+  if (e.target.closest('.page')) captureAllTrackers();
+});
+pageWrap.addEventListener('keyup', (e) => {
+  if (e.target.closest('.page')) captureAllTrackers();
+});
+pageWrap.addEventListener('click', (e) => {
+  if (e.target.classList.contains('add-page-under')) {
+    commitNow();
+    const wrapper = e.target.closest('.page-wrapper');
+    const p = createPage('<p><br></p>', wrapper);
+    commitNow();
+    p.focus();
+    p.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+});
+
+// --- Tabel: klik untuk munculkan toolbar (warna garis + hapus) ---
+const tableToolbar = document.getElementById('tableToolbar');
+let activeTable = null;
+let draggedEl = null;
+
+pageWrap.addEventListener('click', (e) => {
+  const table = e.target.closest('table');
+  if (table) {
+    activeTable = table;
+    const rect = table.getBoundingClientRect();
+    tableToolbar.style.left = Math.max(8, rect.left) + 'px';
+    tableToolbar.style.top = Math.max(8, rect.top - 40) + 'px';
+    tableToolbar.classList.add('show');
+  } else {
+    tableToolbar.classList.remove('show');
+    activeTable = null;
+  }
+});
+document.getElementById('tableBorderColor').addEventListener('input', (e) => {
+  if (!activeTable) return;
+  activeTable.style.borderColor = e.target.value;
+  activeTable.querySelectorAll('td, th').forEach((cell) => { cell.style.borderColor = e.target.value; });
+});
+document.getElementById('tableBorderColor').addEventListener('change', () => {
+  // 'change' baru terpicu sekali saat pemilihan warna selesai -- ini titik
+  // yang tepat untuk mencatat langkah undo (kalau dipasang di 'input' akan
+  // mencatat puluhan langkah saat menggeser color picker).
+  commitNow();
+});
+document.getElementById('tableDeleteBtn').addEventListener('click', () => {
+  if (!activeTable) return;
+  if (confirm('Hapus tabel ini?')) {
+    commitNow();
+    activeTable.remove();
+    commitNow();
+    tableToolbar.classList.remove('show');
+    activeTable = null;
+    updateWordCount();
+  }
+});
+
+// =====================================================================
+// GESER TABEL & SHAPE — pakai Pointer Events, bukan drag HTML5.
+// Drag HTML5 bawaan browser umumnya TIDAK berfungsi di layar sentuh
+// (HP/tablet), jadi tabel/shape terasa "tidak bisa dipindah" di HP.
+// Pointer Events menyatukan mouse & sentuhan sehingga geser tetap jalan
+// di kedua jenis perangkat.
+// =====================================================================
+let ptrDrag = null; // { el }
+
+function beginPointerDrag(el, e) {
+  e.preventDefault();
+  ptrDrag = { el };
+  el.style.opacity = '0.45';
+  if (el.setPointerCapture) { try { el.setPointerCapture(e.pointerId); } catch (err) {} }
+}
+
+function dropElementAtPoint(el, clientX, clientY) {
+  let range = null;
+  if (document.caretRangeFromPoint) {
+    range = document.caretRangeFromPoint(clientX, clientY);
+  } else if (document.caretPositionFromPoint) {
+    const pos = document.caretPositionFromPoint(clientX, clientY);
+    if (pos) { range = document.createRange(); range.setStart(pos.offsetNode, pos.offset); }
+  }
+  if (range) {
+    el.remove();
+    range.insertNode(el);
+    return true;
+  }
+  return false;
+}
+
+// Pegangan "⠿ Seret tabel" di toolbar tabel -> mulai geser tabel aktif
+document.querySelector('#tableToolbar .drag-hint').addEventListener('pointerdown', (e) => {
+  if (!activeTable) return;
+  beginPointerDrag(activeTable, e);
+});
+
+// Sentuh/klik langsung pada shape (kotak, panah, dst.) -> mulai geser shape itu
+pageWrap.addEventListener('pointerdown', (e) => {
+  const shape = e.target.closest('.shape-block');
+  if (shape) beginPointerDrag(shape, e);
+});
+
+document.addEventListener('pointerup', (e) => {
+  if (!ptrDrag) return;
+  const el = ptrDrag.el;
+  el.style.opacity = '';
+  commitNow();
+  dropElementAtPoint(el, e.clientX, e.clientY);
+  commitNow();
+  ptrDrag = null;
+  updateWordCount();
+});
+document.addEventListener('pointercancel', () => {
+  if (ptrDrag) { ptrDrag.el.style.opacity = ''; ptrDrag = null; }
+});
+
+// Drag HTML5 klasik disisakan untuk Text Box saja (masih berguna di desktop;
+// mengetik di dalam text box butuh fokus normal, jadi tidak dipindah ke
+// pointerdown supaya tidak bentrok dengan penempatan kursor teks).
+pageWrap.addEventListener('dragstart', (e) => {
+  const el = e.target.closest('.textbox');
+  if (el) { draggedEl = el; e.dataTransfer.effectAllowed = 'move'; }
+});
+pageWrap.addEventListener('dragover', (e) => {
+  if (draggedEl) e.preventDefault();
+});
+pageWrap.addEventListener('drop', (e) => {
+  if (!draggedEl) return;
+  e.preventDefault();
+  commitNow();
+  dropElementAtPoint(draggedEl, e.clientX, e.clientY);
+  commitNow();
+  draggedEl = null;
+  updateWordCount();
+});
+
+// Ctrl+Z / Ctrl+Y (atau Ctrl+Shift+Z) untuk undo/redo custom kita
+document.addEventListener('keydown', (e) => {
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (!ctrl) return;
+  if (e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); performUndo(); }
+  else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) { e.preventDefault(); performRedo(); }
+});
+
+// Hampir semua tombol/dropdown ribbon otomatis dianggap satu langkah undo
+document.getElementById('ribbon').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn || ['undoBtn', 'redoBtn'].includes(btn.id)) return;
+  commitNow();
+});
+document.getElementById('ribbon').addEventListener('change', () => { commitNow(); });
+
+// (Tambah halaman kini dari tab "Sisipkan" -> Halaman Kosong / Page Break)
 
 function withFocusedPage(fn) {
   const page = lastFocusedPage || document.querySelector('.page');
@@ -402,9 +924,10 @@ document.getElementById('fontName').addEventListener('change', (e) => {
   withFocusedPage(() => document.execCommand('fontName', false, e.target.value));
 });
 
-attachSelectionCapture(document.getElementById('fontSize'));
+attachSelectionCapture(document.getElementById('fontSize'), fontSizeTracker);
 document.getElementById('fontSize').addEventListener('change', (e) => {
   const pt = e.target.value;
+  const savedRange = fontSizeTracker.get();
   if (!savedRange) { alert('Blok/pilih teks dulu (dengan mouse) sebelum mengubah ukuran huruf.'); return; }
   try {
     const span = document.createElement('span');
@@ -419,7 +942,7 @@ document.getElementById('fontSize').addEventListener('change', (e) => {
     const newRange = document.createRange();
     newRange.selectNodeContents(span);
     sel.addRange(newRange);
-    savedRange = newRange.cloneRange();
+    fontSizeTracker.set(newRange.cloneRange());
     updateWordCount();
   } catch (err) {
     alert('Gagal mengubah ukuran huruf, coba blok teksnya lagi lalu ulangi.');
@@ -431,10 +954,10 @@ document.getElementById('blockFormat').addEventListener('change', (e) => {
 });
 
 // --- Spasi baris (line spacing) ---
-attachSelectionCapture(document.getElementById('lineSpacing'));
+attachSelectionCapture(document.getElementById('lineSpacing'), lineSpacingTracker);
 document.getElementById('lineSpacing').addEventListener('change', (e) => {
   const val = e.target.value;
-  let range = savedRange;
+  let range = lineSpacingTracker.get();
   if (!range) {
     const page = lastFocusedPage || document.querySelector('.page');
     if (!page) return;
@@ -443,8 +966,8 @@ document.getElementById('lineSpacing').addEventListener('change', (e) => {
   }
   if (!range) { alert('Klik di dalam paragraf dulu sebelum mengubah spasi baris.'); return; }
   const page = closestPageFromRange(range);
-  if (!page) return;
-  const candidates = page.querySelectorAll('p, li, h1, h2, h3, div');
+  if (!page) { alert('Klik di dalam halaman dokumen dulu sebelum mengubah spasi baris.'); return; }
+  const candidates = page.querySelectorAll('p, li, h1, h2, h3');
   let applied = false;
   candidates.forEach((c) => {
     if (range.intersectsNode(c)) { c.style.lineHeight = val; applied = true; }
@@ -453,18 +976,20 @@ document.getElementById('lineSpacing').addEventListener('change', (e) => {
     const node = range.startContainer;
     const el = node.nodeType === 3 ? node.parentElement : node;
     const block = el ? el.closest('p, li, h1, h2, h3') : null;
-    if (block) block.style.lineHeight = val;
+    if (block) { block.style.lineHeight = val; applied = true; }
   }
+  if (!applied) { showToast('Klik langsung di dalam sebuah paragraf, lalu coba lagi.'); return; }
   lastFocusedPage = page;
   page.focus();
   showToast('Spasi baris diterapkan: ' + val);
 });
 
 // --- Ubah huruf besar/kecil ---
-attachSelectionCapture(document.getElementById('textCase'));
+attachSelectionCapture(document.getElementById('textCase'), textCaseTracker);
 document.getElementById('textCase').addEventListener('change', (e) => {
   const mode = e.target.value;
   if (!mode) return;
+  const savedRange = textCaseTracker.get();
   if (!savedRange) { alert('Blok teks dulu sebelum mengubah huruf.'); e.target.value = ''; return; }
   const span = document.createElement('span');
   const contents = savedRange.extractContents();
@@ -482,7 +1007,7 @@ document.getElementById('textCase').addEventListener('change', (e) => {
   const nr = document.createRange();
   nr.selectNodeContents(span);
   sel.addRange(nr);
-  savedRange = nr.cloneRange();
+  textCaseTracker.set(nr.cloneRange());
   e.target.value = '';
   updateWordCount();
 });
@@ -507,7 +1032,7 @@ document.getElementById('insertTableBtn').addEventListener('click', () => {
   withFocusedPage(() => document.execCommand('insertHTML', false, html));
 });
 
-document.getElementById('insertHrBtn').addEventListener('click', () => {
+document.getElementById('hrLineBtn').addEventListener('click', () => {
   withFocusedPage(() => document.execCommand('insertHorizontalRule', false, null));
 });
 
@@ -554,6 +1079,233 @@ imageInput.addEventListener('change', () => {
   imageInput.value = '';
 });
 
+// --- Tab switching ---
+document.querySelectorAll('.tab-btn[data-tab]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.ribbon-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// --- Backstage (File menu) ---
+const recentFiles = []; // in-memory only for this session
+function addRecentFile(name) {
+  recentFiles.unshift({ name, time: new Date() });
+  renderRecentFiles();
+}
+function renderRecentFiles() {
+  const body = document.getElementById('recentFilesBody');
+  if (recentFiles.length === 0) {
+    body.innerHTML = '<tr><td colspan="2" style="color:#999;">Belum ada dokumen yang dibuka/disimpan sesi ini.</td></tr>';
+    return;
+  }
+  body.innerHTML = recentFiles.map(f =>
+    `<tr><td>📄 ${f.name}</td><td>${f.time.toLocaleTimeString('id-ID')}</td></tr>`
+  ).join('');
+}
+
+document.getElementById('fileTabBtn').addEventListener('click', () => {
+  document.getElementById('backstage').classList.add('show');
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') document.getElementById('backstage').classList.remove('show');
+});
+document.getElementById('bsCloseBtn').addEventListener('click', () => {
+  document.getElementById('backstage').classList.remove('show');
+});
+document.getElementById('bsBackBtn').addEventListener('click', () => {
+  document.getElementById('backstage').classList.remove('show');
+});
+document.getElementById('bsBlankDoc').addEventListener('click', () => {
+  document.getElementById('backstage').classList.remove('show');
+  document.getElementById('newBtn').click();
+});
+document.querySelector('[data-bs="open"]').addEventListener('click', () => {
+  document.getElementById('backstage').classList.remove('show');
+  document.getElementById('openBtn').click();
+});
+document.getElementById('bsPrintBtn').addEventListener('click', () => {
+  document.getElementById('backstage').classList.remove('show');
+  window.print();
+});
+document.querySelectorAll('#backstage-sidebar button[data-bs]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#backstage-sidebar button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+  });
+});
+
+// --- Tab Desain ---
+document.getElementById('pageColorPicker').addEventListener('input', (e) => {
+  document.querySelectorAll('.page').forEach(p => { p.style.background = e.target.value; });
+});
+let bordersOn = false;
+document.getElementById('pageBorderBtn').addEventListener('click', () => {
+  bordersOn = !bordersOn;
+  document.querySelectorAll('.page').forEach(p => {
+    p.style.outline = bordersOn ? '2px solid #333' : 'none';
+    p.style.outlineOffset = bordersOn ? '-10px' : '0';
+  });
+});
+document.getElementById('watermarkBtn').addEventListener('click', () => {
+  const text = prompt('Teks watermark (kosongkan untuk hapus):', 'DRAFT');
+  document.querySelectorAll('.page').forEach(p => {
+    p.style.backgroundImage = text
+      ? `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><text x='50%' y='50%' font-size='40' fill='rgba(0,0,0,0.12)' text-anchor='middle' transform='rotate(-35 200 200)'>${text}</text></svg>`)}")`
+      : 'none';
+    p.style.backgroundRepeat = 'repeat';
+  });
+});
+
+// --- Tab Tata Letak ---
+document.getElementById('orientationSelect').addEventListener('change', (e) => {
+  const landscape = e.target.value === 'landscape';
+  document.querySelectorAll('.page').forEach((p) => {
+    const w = parseInt(p.style.width);
+    const h = parseInt(p.style.minHeight);
+    if (landscape && w < h) { p.style.width = h + 'px'; p.style.minHeight = w + 'px'; }
+    if (!landscape && w > h) { p.style.width = h + 'px'; p.style.minHeight = w + 'px'; }
+  });
+});
+document.getElementById('marginPresetNormal').addEventListener('click', () => setMarginPreset(2.54));
+document.getElementById('marginPresetNarrow').addEventListener('click', () => setMarginPreset(1.27));
+document.getElementById('marginPresetWide').addEventListener('click', () => setMarginPreset(3.81));
+function setMarginPreset(cm) {
+  ['marginTop','marginBottom','marginLeft','marginRight'].forEach(id => { document.getElementById(id).value = cm; });
+  document.getElementById('marginUnit').value = 'cm';
+  document.getElementById('applyMarginBtn').click();
+}
+document.getElementById('columnsSelect').addEventListener('change', (e) => {
+  const page = lastFocusedPage || document.querySelector('.page');
+  if (!page) return;
+  page.style.columnCount = e.target.value;
+  page.style.columnGap = '24px';
+});
+
+// --- Tab Referensi ---
+document.getElementById('tocBtn').addEventListener('click', () => {
+  const page = lastFocusedPage || document.querySelector('.page');
+  if (!page) return;
+  const headings = Array.from(document.querySelectorAll('.page h1, .page h2, .page h3'));
+  if (headings.length === 0) { alert('Belum ada Heading di dokumen. Pakai gaya Heading 1/2/3 dulu di tab Beranda.'); return; }
+  let html = '<p><b>DAFTAR ISI</b></p><ul>';
+  headings.forEach(h => { html += `<li>${h.textContent}</li>`; });
+  html += '</ul><p><br></p>';
+  page.focus();
+  document.execCommand('insertHTML', false, html);
+});
+document.getElementById('citationBtn').addEventListener('click', () => {
+  withFocusedPage(() => document.execCommand('insertText', false, '[Sumber]'));
+});
+document.getElementById('footnoteBtn').addEventListener('click', () => {
+  const note = prompt('Isi catatan kaki:', '');
+  if (!note) return;
+  withFocusedPage(() => document.execCommand('insertHTML', false, ` <sup>[${note}]</sup>`));
+});
+
+// --- Tab Mailings (fitur lanjutan, belum didukung penuh di versi web ini) ---
+['mailMergeInfoBtn', 'mailMergeInfoBtn2'].forEach(id => {
+  document.getElementById(id).addEventListener('click', () => {
+    alert('Fitur Mail Merge penuh belum tersedia di versi web gratis ini.');
+  });
+});
+
+// --- Sisipkan: Halaman Kosong & Page Break (keduanya = halaman baru terpisah) ---
+document.getElementById('blankPageBtn').addEventListener('click', () => {
+  const pages = getAllPages();
+  const refPage = lastFocusedPage && pages.includes(lastFocusedPage) ? lastFocusedPage : pages[pages.length - 1];
+  const refWrapper = refPage ? refPage.closest('.page-wrapper') : null;
+  const newPage = createPage('<p><br></p>', refWrapper);
+  newPage.focus();
+  newPage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+document.getElementById('pageBreakInsertBtn').addEventListener('click', () => {
+  document.getElementById('blankPageBtn').click();
+});
+
+// --- Sisipkan: Shapes (kotak, oval, panah, bintang, dll) ---
+function shapeHtml(type) {
+  const wrap = (inner, w, h) =>
+    `<span class="shape-block" contenteditable="false" style="display:inline-block;width:${w}px;height:${h}px;vertical-align:middle;margin:4px;touch-action:none;cursor:move;">${inner}</span>`;
+  switch (type) {
+    case 'rect': return wrap(`<div style="width:100%;height:100%;border:2px solid #333;box-sizing:border-box;"></div>`, 110, 70);
+    case 'roundrect': return wrap(`<div style="width:100%;height:100%;border:2px solid #333;border-radius:14px;box-sizing:border-box;"></div>`, 110, 70);
+    case 'oval': return wrap(`<div style="width:100%;height:100%;border:2px solid #333;border-radius:50%;box-sizing:border-box;"></div>`, 90, 90);
+    case 'triangle': return wrap(`<div style="width:0;height:0;border-left:45px solid transparent;border-right:45px solid transparent;border-bottom:78px solid #333;"></div>`, 90, 78);
+    case 'diamond': return wrap(`<div style="width:64px;height:64px;border:2px solid #333;transform:rotate(45deg);margin:16px auto;box-sizing:border-box;"></div>`, 96, 96);
+    case 'arrow-right': return wrap(`<svg viewBox="0 0 100 40" width="100%" height="100%"><line x1="5" y1="20" x2="80" y2="20" stroke="#333" stroke-width="5"/><polygon points="75,7 98,20 75,33" fill="#333"/></svg>`, 100, 40);
+    case 'arrow-left': return wrap(`<svg viewBox="0 0 100 40" width="100%" height="100%"><line x1="20" y1="20" x2="95" y2="20" stroke="#333" stroke-width="5"/><polygon points="25,7 2,20 25,33" fill="#333"/></svg>`, 100, 40);
+    case 'arrow-up': return wrap(`<svg viewBox="0 0 40 100" width="100%" height="100%"><line x1="20" y1="95" x2="20" y2="20" stroke="#333" stroke-width="5"/><polygon points="7,25 20,2 33,25" fill="#333"/></svg>`, 40, 100);
+    case 'arrow-down': return wrap(`<svg viewBox="0 0 40 100" width="100%" height="100%"><line x1="20" y1="5" x2="20" y2="80" stroke="#333" stroke-width="5"/><polygon points="7,75 20,98 33,75" fill="#333"/></svg>`, 40, 100);
+    case 'arrow-double': return wrap(`<svg viewBox="0 0 130 40" width="100%" height="100%"><line x1="20" y1="20" x2="110" y2="20" stroke="#333" stroke-width="5"/><polygon points="25,7 2,20 25,33" fill="#333"/><polygon points="105,7 128,20 105,33" fill="#333"/></svg>`, 130, 40);
+    case 'star': return wrap(`<svg viewBox="0 0 100 100" width="100%" height="100%"><polygon points="50,5 61,38 96,38 68,59 79,92 50,71 21,92 32,59 4,38 39,38" fill="#333"/></svg>`, 90, 90);
+    case 'callout': return wrap(`<div style="width:100%;height:100%;border:2px solid #333;border-radius:10px;box-sizing:border-box;"></div>`, 140, 80);
+    case 'line': return wrap(`<div style="width:100%;height:2px;background:#333;margin-top:19px;"></div>`, 150, 40);
+    case 'pentagon': return wrap(`<div style="width:100%;height:100%;background:#333;clip-path:polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);"></div>`, 90, 86);
+    case 'cross': return wrap(`<div style="position:relative;width:100%;height:100%;"><div style="position:absolute;left:40%;top:0;width:20%;height:100%;background:#333;"></div><div style="position:absolute;top:40%;left:0;width:100%;height:20%;background:#333;"></div></div>`, 90, 90);
+    default: return '';
+  }
+}
+document.getElementById('shapeSelect').addEventListener('change', (e) => {
+  const type = e.target.value;
+  if (!type) return;
+  withFocusedPage(() => document.execCommand('insertHTML', false, shapeHtml(type) + '&nbsp;'));
+  e.target.value = '';
+});
+
+// --- Sisipkan: Text Box ---
+document.getElementById('textBoxBtn').addEventListener('click', () => {
+  withFocusedPage(() => document.execCommand('insertHTML', false, '<span class="textbox" draggable="true" contenteditable="true">Ketik di sini...</span>&nbsp;'));
+});
+
+// --- Sisipkan: Header ---
+document.getElementById('headerBtn').addEventListener('click', () => {
+  const text = prompt('Isi teks header (akan muncul di atas setiap halaman):', '');
+  if (text === null) return;
+  document.querySelectorAll('.page-header-area').forEach(h => { h.textContent = text; });
+  if (document.querySelectorAll('.page-header-area').length === 0) {
+    getAllPages().forEach(p => {
+      const header = document.createElement('div');
+      header.className = 'page-header-area';
+      header.contentEditable = 'true';
+      header.textContent = text;
+      p.insertBefore(header, p.firstChild);
+    });
+  }
+  showToast('Header diterapkan ke semua halaman.');
+});
+
+// --- Sisipkan: Footer toggle (menampilkan/upadate teks footer custom) ---
+document.getElementById('footerToggleBtn').addEventListener('click', () => {
+  const text = prompt('Isi teks footer tambahan (akan muncul di bawah nomor halaman):', '');
+  if (text === null) return;
+  document.querySelectorAll('.page-footer').forEach((f) => {
+    f.dataset.customText = text;
+  });
+  renumberPages();
+  showToast('Footer diterapkan ke semua halaman.');
+});
+
+// --- Sisipkan: Page Number field (nomor halaman langsung di teks kursor) ---
+document.getElementById('pageNumberInsertBtn').addEventListener('click', () => {
+  withFocusedPage((page) => {
+    const wrapper = page.closest('.page-wrapper');
+    const label = wrapper ? wrapper.querySelector('.page-label') : null;
+    const num = label ? label.textContent.replace(/\D/g, '') : '1';
+    document.execCommand('insertText', false, num);
+  });
+});
+
+// --- Sisipkan: Symbol ---
+document.getElementById('symbolSelect').addEventListener('change', (e) => {
+  const sym = e.target.value;
+  if (!sym) return;
+  withFocusedPage(() => document.execCommand('insertText', false, sym));
+  e.target.value = '';
+});
+
 function updateWordCount() {
   const text = getAllPages().map(p => p.innerText).join(' ').trim();
   const count = text ? text.split(/\s+/).length : 0;
@@ -563,8 +1315,10 @@ function updateWordCount() {
 
 document.getElementById('newBtn').addEventListener('click', () => {
   if (confirm('Buat dokumen baru? Semua halaman saat ini akan dihapus.')) {
+    commitNow();
     pageWrap.innerHTML = '';
     createPage('<p>Mulai ketik dokumen kamu di sini...</p>', null);
+    commitNow();
     statusText.textContent = 'Dokumen Baru';
     updateWordCount();
   }
@@ -589,9 +1343,12 @@ fileInput.addEventListener('change', async (e) => {
       const text = await file.text();
       html = text.split(/\r?\n/).map(l => `<p>${l || '<br>'}</p>`).join('');
     }
+    commitNow();
     pageWrap.innerHTML = '';
     createPage(html, null);
+    commitNow();
     statusText.textContent = file.name;
+    addRecentFile(file.name);
     updateWordCount();
     showToast('File berhasil dibuka: ' + file.name);
   } catch (err) {
@@ -600,34 +1357,35 @@ fileInput.addEventListener('change', async (e) => {
   fileInput.value = '';
 });
 
-document.getElementById('saveBtn').addEventListener('click', async () => {
+let savedFileHandle = null;
+let autoSaveTimer = null;
+
+function buildFullHtml(title) {
   const pages = getAllPages();
+
+  // Pemisah halaman gaya "Save as Web Page" milik Word sendiri -- ini yang
+  // benar-benar dikenali Word sebagai batas halaman keras, beda dengan cuma
+  // menaruh CSS page-break-before pada sebuah <div> pembungkus (itu sering
+  // diabaikan Word saat file dibuka, makanya semua halaman tergabung jadi satu).
+  const MSO_PAGE_BREAK = "<br clear='all' style='mso-special-character:line-break;page-break-before:always'>";
+
   const bodyHtml = pages.map((p, i) => {
     const breakStyle = i > 0 ? "style='page-break-before:always;'" : '';
-    return `<div ${breakStyle}>${p.innerHTML}</div>`;
+    const breakMarker = i > 0 ? MSO_PAGE_BREAK : '';
+    return `${breakMarker}<div ${breakStyle}>${p.innerHTML}</div>`;
   }).join('');
 
-  // --- Konversi ukuran kertas & margin yang sedang aktif ke cm, untuk @page Word ---
-  const paperSizeCm = {
-    A4:     { w: 21,    h: 29.7 },
-    Letter: { w: 21.59, h: 27.94 },
-    Legal:  { w: 21.59, h: 35.56 },
-    F4:     { w: 21.5,  h: 33 },
-  };
+  // --- Ukuran kertas & margin aktif, dikonversi ke cm untuk @page Word ---
+  const paperSizeCm = { A4: { w: 21, h: 29.7 }, Letter: { w: 21.59, h: 27.94 }, Legal: { w: 21.59, h: 35.56 }, F4: { w: 21.5, h: 33 } };
   const paper = paperSizeCm[document.getElementById('paperSize').value] || paperSizeCm.A4;
-
   const marginUnit = document.getElementById('marginUnit').value;
-  const toCm = (v) => {
-    const n = parseFloat(v);
-    if (isNaN(n)) return 2.54;
-    return marginUnit === 'in' ? n * 2.54 : n;
-  };
+  const toCm = (v) => { const n = parseFloat(v); if (isNaN(n)) return 2.54; return marginUnit === 'in' ? n * 2.54 : n; };
   const mTop = toCm(document.getElementById('marginTop').value);
   const mBottom = toCm(document.getElementById('marginBottom').value);
   const mLeft = toCm(document.getElementById('marginLeft').value);
   const mRight = toCm(document.getElementById('marginRight').value);
 
-  const buildFullHtml = (title) => `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
 <head>
 <meta charset='utf-8'>
@@ -650,7 +1408,6 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     mso-paper-source: 0;
   }
   div.WordSection1 { page: WordSection1; }
-
   body {
     font-family: 'Segoe UI', Calibri, Arial, sans-serif;
     font-size: 12pt;
@@ -659,11 +1416,6 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     margin: 0;
     text-align: left;
   }
-  /* Paksa rata kiri sebagai default, supaya tidak ikut gaya bawaan
-     Word (Normal.dotm) yang di sebagian instalasi bisa berupa
-     Justify/Distribute dan meregangkan tiap huruf. Paragraf yang
-     memang sengaja kamu buat rata tengah/kanan/justify lewat toolbar
-     tetap terjaga karena style-nya nempel inline (lebih spesifik). */
   p, div, li, h1, h2, h3, td, th { text-align: left; }
   h1 { font-size: 24pt; font-weight: 600; margin: 0.6em 0 0.3em; }
   h2 { font-size: 18pt; font-weight: 600; margin: 0.6em 0 0.3em; }
@@ -677,20 +1429,46 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 <div class="WordSection1">${bodyHtml}</div>
 </body>
 </html>`;
+}
 
+async function performAutoSave() {
+  if (!savedFileHandle) return;
+  try {
+    const title = savedFileHandle.name.replace(/\.docx?$/i, '');
+    const fullHtml = buildFullHtml(title);
+    const writable = await savedFileHandle.createWritable();
+    await writable.write(new Blob(['\ufeff', fullHtml], { type: 'application/msword' }));
+    await writable.close();
+    statusText.textContent = savedFileHandle.name + ' (tersimpan otomatis)';
+    showToast('✓ Tersimpan otomatis: ' + savedFileHandle.name);
+  } catch (err) {
+    // Handle might have been revoked/moved - stop trying until user saves again manually.
+    savedFileHandle = null;
+  }
+}
+
+function scheduleAutoSave() {
+  if (!savedFileHandle) return;
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(performAutoSave, 3000); // 3 detik setelah berhenti mengetik
+}
+
+document.getElementById('saveBtn').addEventListener('click', async () => {
   if (window.showSaveFilePicker) {
     try {
       const handle = await window.showSaveFilePicker({
         suggestedName: 'Dokumen.doc',
         types: [{ description: 'Word Document', accept: { 'application/msword': ['.doc'] } }],
       });
+      savedFileHandle = handle;
       const title = handle.name.replace(/\.docx?$/i, '');
       const fullHtml = buildFullHtml(title);
       const writable = await handle.createWritable();
       await writable.write(new Blob(['\ufeff', fullHtml], { type: 'application/msword' }));
       await writable.close();
-      statusText.textContent = handle.name + ' (tersimpan)';
-      showToast('Tersimpan di lokasi yang kamu pilih: ' + handle.name);
+      statusText.textContent = handle.name + ' (tersimpan — auto-save aktif)';
+      addRecentFile(handle.name);
+      showToast('Tersimpan! Auto-save aktif ke file ini selama kamu buka halaman ini.');
       return;
     } catch (err) {
       if (err.name === 'AbortError') return;
@@ -708,7 +1486,8 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  statusText.textContent = filename + '.doc (tersimpan ke Downloads)';
+  statusText.textContent = filename + '.doc (tersimpan ke Downloads — auto-save tidak tersedia di browser ini)';
+  addRecentFile(filename + '.doc');
   showToast('Tersimpan ke folder Downloads: ' + filename + '.doc');
 });
 
