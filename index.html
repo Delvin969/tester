@@ -1,1811 +1,1746 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
-<title>FreeWord - Editor Dokumen Gratis</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background: #d6d6d6;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-  #ribbon {
-    background: linear-gradient(#f3f3f3, #e6e6e6);
-    border-bottom: 1px solid #c8c8c8;
-    padding: 8px 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 14px;
-    align-items: center;
-  }
-  .group {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 0 10px;
-    border-right: 1px solid #d0d0d0;
-    flex-wrap: wrap;
-  }
-  .group:last-child { border-right: none; }
-  button {
-    background: #fff;
-    border: 1px solid #c8c8c8;
-    border-radius: 3px;
-    padding: 5px 9px;
-    cursor: pointer;
-    font-size: 13px;
-    min-width: 28px;
-  }
-  button:hover { background: #e3f0fd; border-color: #2b7de9; }
-  button:active { background: #cfe4fb; }
-  select, input[type="color"], input[type="number"] {
-    border: 1px solid #c8c8c8;
-    border-radius: 3px;
-    padding: 4px;
-    font-size: 13px;
-    background: #fff;
-  }
-  input[type="color"] { width: 32px; height: 28px; padding: 2px; cursor: pointer; }
-  input[type="number"] { width: 50px; }
-  .mini-label { font-size: 11px; color: #555; }
-  #tabbar {
-    display: flex;
-    gap: 2px;
-    background: #f3f3f3;
-    padding: 6px 10px 0;
-    border-bottom: 1px solid #c8c8c8;
-  }
-  .tab-btn {
-    background: transparent;
-    border: none;
-    border-radius: 4px 4px 0 0;
-    padding: 7px 18px;
-    font-size: 13px;
-    cursor: pointer;
-    color: #444;
-  }
-  .tab-btn:hover { background: #e3f0fd; }
-  .tab-btn.active {
-    background: #fff;
-    color: #2b579a;
-    font-weight: 600;
-    border: 1px solid #c8c8c8;
-    border-bottom: 1px solid #fff;
-    margin-bottom: -1px;
-  }
-  .tab-btn.file-tab {
-    background: #2b579a;
-    color: white;
-    font-weight: 600;
-  }
-  .tab-btn.file-tab:hover { background: #1e4173; }
-  #backstage {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: #2b579a;
-    z-index: 999;
-    color: white;
-  }
-  #backstage.show { display: flex; }
-  #backstage-sidebar {
-    width: 220px;
-    background: #1e4173;
-    padding: 20px 0;
-    display: flex;
-    flex-direction: column;
-  }
-  #backstage-sidebar button {
-    background: transparent;
-    border: none;
-    color: white;
-    text-align: left;
-    padding: 12px 24px;
-    font-size: 14px;
-    cursor: pointer;
-    width: 100%;
-  }
-  #backstage-sidebar button:hover { background: #2b579a; }
-  #backstage-sidebar button.active { background: #f3f3f3; color: #1e4173; font-weight: 600; }
-  #backstage-main {
-    flex: 1;
-    background: #f3f3f3;
-    color: #222;
-    padding: 30px 50px;
-    overflow-y: auto;
-  }
-  #backstage-main h1 { font-weight: 400; margin-top: 0; }
-  .template-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 20px 0 30px; }
-  .template-card {
-    width: 140px;
-    cursor: pointer;
-    text-align: center;
-  }
-  .template-card .thumb {
-    width: 140px;
-    height: 180px;
-    background: white;
-    border: 1px solid #ccc;
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    color: #999;
-  }
-  .template-card:hover .thumb { border-color: #2b7de9; }
-  .recent-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .recent-table th { text-align: left; padding: 6px 8px; border-bottom: 1px solid #ccc; color: #555; font-weight: 600; }
-  .recent-table td { padding: 8px; border-bottom: 1px solid #e0e0e0; }
-  .recent-table tr:hover { background: #e8f0fe; cursor: pointer; }
-  .ribbon-panel { display: none; }
-  .ribbon-panel.active { display: flex; }
-  .textbox {
-    display: inline-block;
-    min-width: 120px;
-    min-height: 40px;
-    border: 1px dashed #888;
-    padding: 8px;
-    margin: 4px;
-    resize: both;
-    overflow: auto;
-    vertical-align: top;
-    cursor: move;
-  }
-  #tableToolbar {
-    position: fixed;
-    display: none;
-    align-items: center;
-    gap: 8px;
-    background: #333;
-    color: white;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    z-index: 500;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  }
-  #tableToolbar.show { display: flex; }
-  #tableToolbar button {
-    background: #555;
-    color: white;
-    border: none;
-    padding: 4px 8px;
-    font-size: 11px;
-    border-radius: 3px;
-    cursor: pointer;
-  }
-  #tableToolbar button:hover { background: #d9534f; }
-  #tableToolbar input[type="color"] { width: 24px; height: 24px; padding: 0; border: none; cursor: pointer; }
-  #tableToolbar .drag-hint { cursor: grab; font-size: 15px; touch-action: none; user-select: none; }
-  .shape-rect { display:inline-block; width:120px; height:80px; border:2px solid #333; margin:4px; vertical-align:middle; }
-  .shape-circle { display:inline-block; width:90px; height:90px; border:2px solid #333; border-radius:50%; margin:4px; vertical-align:middle; }
-  .shape-line { display:block; width:200px; height:0; border-top:2px solid #333; margin:12px 4px; }
-  .page-header-area {
-    font-size: 10px;
-    color: #888;
-    text-align: center;
-    padding-bottom: 6px;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #ddd;
-    outline: none;
-    min-height: 14px;
-  }
-  #statusbar {
-    background: #2b579a;
-    color: white;
-    font-size: 12px;
-    padding: 4px 14px;
-    display: flex;
-    justify-content: space-between;
-  }
-  #page-wrap {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    padding: 30px 0 80px;
-  }
-  .page-wrapper { position: relative; margin-bottom: 20px; }
-  .page {
-    background: white;
-    box-shadow: 0 0 8px rgba(0,0,0,0.25);
-    font-size: 12pt;
-    line-height: 1.5;
-    outline: none;
-    color: #111;
-  }
-  .page-label {
-    position: absolute;
-    top: -22px;
-    left: 0;
-    font-size: 11px;
-    color: #777;
-  }
-  .page-footer {
-    text-align: right;
-    font-size: 10px;
-    color: #999;
-    margin: 4px 2px 0;
-  }
-  .add-page-under {
-    display: block;
-    margin: 6px auto 0;
-    background: #fff;
-    border: 1px dashed #999;
-    border-radius: 4px;
-    padding: 6px 14px;
-    font-size: 12px;
-    color: #444;
-    cursor: pointer;
-  }
-  .add-page-under:hover { background: #e3f0fd; border-color: #2b7de9; }
-  .page img { max-width: 100%; }
-  .page table { border-collapse: collapse; margin: 10px 0; }
-  .page table td, .page table th { border: 1px solid #999; padding: 6px 10px; min-width: 60px; }
-  .page h1 { font-size: 24pt; font-weight: 600; margin: 0.6em 0 0.3em; }
-  .page h2 { font-size: 18pt; font-weight: 600; margin: 0.6em 0 0.3em; }
-  .page h3 { font-size: 14pt; font-weight: 600; margin: 0.6em 0 0.3em; }
-  .page p { margin: 0 0 10px; }
-  #fileInput, #imageInput { display: none; }
-  #toast {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: #333; color: white; padding: 10px 18px; border-radius: 6px;
-    font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none;
-  }
-  #toast.show { opacity: 1; }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WhatsApp Web — Chat & Grup</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet" />
+    <style>
+        /* ─── RESET & GLOBAL ─── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: #0b141a;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e9edef;
+        }
+        .app {
+            width: 100%;
+            max-width: 1400px;
+            height: 100vh;
+            max-height: 100vh;
+            background: #111b21;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            position: relative;
+        }
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            height: calc(100% - 60px);
+        }
 
-  @media print {
-    #ribbon, #statusbar, .page-label, .add-page-under, #toast { display: none !important; }
-    body { background: white; }
-    #page-wrap { padding: 0; gap: 0; }
-    .page-wrapper { margin-bottom: 0; page-break-after: always; }
-    .page { box-shadow: none; }
-  }
-</style>
+        /* ─── SIDEBAR ─── */
+        .sidebar {
+            width: 380px;
+            min-width: 300px;
+            background: #111b21;
+            border-right: 1px solid #2b3943;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .sidebar-header {
+            padding: 16px 18px;
+            background: #1f2c33;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #2b3943;
+            flex-shrink: 0;
+        }
+        .sidebar-header .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2b3943;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #e9edef;
+            cursor: pointer;
+            overflow: hidden;
+        }
+        .sidebar-header .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .sidebar-header .actions {
+            display: flex;
+            gap: 6px;
+        }
+        .sidebar-header .actions button {
+            background: transparent;
+            border: none;
+            color: #aebac1;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sidebar-header .actions button:hover {
+            background: #2b3943;
+            color: #e9edef;
+        }
+        .search-bar {
+            padding: 8px 12px;
+            background: #111b21;
+            flex-shrink: 0;
+        }
+        .search-bar .search-wrap {
+            background: #1f2c33;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+            border: 1px solid transparent;
+        }
+        .search-bar .search-wrap:focus-within {
+            border-color: #00a884;
+        }
+        .search-bar .search-wrap i {
+            color: #8696a0;
+            font-size: 14px;
+        }
+        .search-bar .search-wrap input {
+            background: transparent;
+            border: none;
+            outline: none;
+            padding: 10px 0;
+            flex: 1;
+            color: #e9edef;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .search-bar .search-wrap input::placeholder {
+            color: #8696a0;
+        }
+        .search-bar .search-wrap .search-hint {
+            color: #8696a0;
+            font-size: 12px;
+            margin-right: 6px;
+        }
+
+        .contact-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 0 8px 0;
+            scrollbar-width: thin;
+            scrollbar-color: #2b3943 transparent;
+        }
+        .contact-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .contact-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .contact-list::-webkit-scrollbar-thumb {
+            background: #2b3943;
+            border-radius: 4px;
+        }
+        .contact-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 18px;
+            cursor: pointer;
+            transition: 0.15s;
+            gap: 14px;
+            border-left: 3px solid transparent;
+        }
+        .contact-item:hover {
+            background: #1f2c33;
+        }
+        .contact-item.active {
+            background: #1f2c33;
+            border-left-color: #00a884;
+        }
+        .contact-item .c-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #2b3943;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 20px;
+            color: #e9edef;
+            overflow: hidden;
+            position: relative;
+        }
+        .contact-item .c-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .contact-item .c-avatar .group-icon {
+            font-size: 22px;
+            color: #aebac1;
+        }
+        .contact-item .c-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .contact-item .c-info .c-name {
+            font-weight: 500;
+            font-size: 16px;
+            color: #e9edef;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .contact-item .c-info .c-name .online-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #31a24c;
+            flex-shrink: 0;
+        }
+        .contact-item .c-info .c-preview {
+            font-size: 14px;
+            color: #8696a0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px;
+        }
+        .contact-item .c-meta {
+            flex-shrink: 0;
+            text-align: right;
+            margin-left: auto;
+            padding-left: 10px;
+        }
+        .contact-item .c-meta .c-time {
+            font-size: 12px;
+            color: #8696a0;
+        }
+        .contact-item .c-meta .c-badge {
+            background: #00a884;
+            color: #111b21;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 4px;
+        }
+
+        /* ─── CHAT AREA ─── */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0b141a;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+        .chat-header {
+            padding: 10px 18px;
+            background: #1f2c33;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border-bottom: 1px solid #2b3943;
+            flex-shrink: 0;
+            min-height: 60px;
+        }
+        .chat-header .back-btn {
+            display: none;
+            background: transparent;
+            border: none;
+            color: #aebac1;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+        .chat-header .ch-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2b3943;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            color: #e9edef;
+            overflow: hidden;
+        }
+        .chat-header .ch-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .chat-header .ch-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .chat-header .ch-info .ch-name {
+            font-weight: 500;
+            font-size: 16px;
+            color: #e9edef;
+        }
+        .chat-header .ch-info .ch-status {
+            font-size: 13px;
+            color: #8696a0;
+        }
+        .chat-header .ch-info .ch-status.online {
+            color: #31a24c;
+        }
+        .chat-header .ch-actions {
+            display: flex;
+            gap: 2px;
+        }
+        .chat-header .ch-actions button {
+            background: transparent;
+            border: none;
+            color: #aebac1;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-header .ch-actions button:hover {
+            background: #2b3943;
+            color: #e9edef;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 40px 10px 40px;
+            background: #0b141a;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(0, 168, 132, 0.03) 0%, transparent 60%),
+                radial-gradient(circle at 80% 70%, rgba(0, 168, 132, 0.02) 0%, transparent 50%);
+            display: flex;
+            flex-direction: column;
+            scrollbar-width: thin;
+            scrollbar-color: #2b3943 transparent;
+        }
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #2b3943;
+            border-radius: 4px;
+        }
+
+        .message {
+            max-width: 65%;
+            padding: 8px 12px 6px 12px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            position: relative;
+            word-wrap: break-word;
+            font-size: 14.5px;
+            line-height: 1.5;
+            animation: msgIn 0.15s ease;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+        }
+        @keyframes msgIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.96);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .message.sent {
+            align-self: flex-end;
+            background: #005c4b;
+            color: #e9edef;
+            border-bottom-right-radius: 2px;
+        }
+        .message.received {
+            align-self: flex-start;
+            background: #1f2c33;
+            color: #e9edef;
+            border-bottom-left-radius: 2px;
+        }
+        .message .msg-time {
+            font-size: 11px;
+            color: #8696a0;
+            text-align: right;
+            margin-top: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+        }
+        .message.sent .msg-time {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .message.sent .msg-time .check {
+            color: #53bdeb;
+        }
+        .message .msg-sender {
+            font-weight: 600;
+            font-size: 13px;
+            color: #aebac1;
+            margin-bottom: 2px;
+        }
+        .message.sent .msg-sender {
+            color: #53bdeb;
+        }
+
+        .date-divider {
+            text-align: center;
+            margin: 12px 0 16px 0;
+            font-size: 12.5px;
+            color: #8696a0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: center;
+        }
+        .date-divider span {
+            background: #1f2c33;
+            padding: 4px 14px;
+            border-radius: 8px;
+            color: #aebac1;
+            font-weight: 500;
+            font-size: 12px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .chat-input {
+            padding: 8px 14px;
+            background: #1f2c33;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-top: 1px solid #2b3943;
+            flex-shrink: 0;
+            min-height: 62px;
+        }
+        .chat-input .input-actions {
+            display: flex;
+            gap: 2px;
+        }
+        .chat-input .input-actions button {
+            background: transparent;
+            border: none;
+            color: #aebac1;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-input .input-actions button:hover {
+            background: #2b3943;
+            color: #e9edef;
+        }
+        .chat-input .input-wrap {
+            flex: 1;
+            background: #111b21;
+            border-radius: 8px;
+            padding: 0 14px;
+            display: flex;
+            align-items: center;
+            border: 1px solid #2b3943;
+            transition: 0.2s;
+        }
+        .chat-input .input-wrap:focus-within {
+            border-color: #00a884;
+        }
+        .chat-input .input-wrap input {
+            background: transparent;
+            border: none;
+            outline: none;
+            padding: 10px 0;
+            flex: 1;
+            color: #e9edef;
+            font-size: 15px;
+            font-family: inherit;
+        }
+        .chat-input .input-wrap input::placeholder {
+            color: #8696a0;
+        }
+        .chat-input .send-btn {
+            background: #00a884;
+            border: none;
+            color: #111b21;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            font-size: 22px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .chat-input .send-btn:hover {
+            background: #00c9a0;
+            transform: scale(1.04);
+        }
+        .chat-input .send-btn:active {
+            transform: scale(0.94);
+        }
+        .chat-input .send-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #8696a0;
+            padding: 40px;
+            text-align: center;
+        }
+        .empty-state i {
+            font-size: 72px;
+            color: #2b3943;
+            margin-bottom: 20px;
+        }
+        .empty-state h2 {
+            font-weight: 300;
+            font-size: 24px;
+            color: #e9edef;
+            margin-bottom: 8px;
+        }
+        .empty-state p {
+            font-size: 14px;
+            max-width: 400px;
+        }
+
+        /* ─── TOAST NOTIFICATION ─── */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-width: 380px;
+            width: 100%;
+            pointer-events: none;
+        }
+        .toast {
+            background: #1f2c33;
+            color: #e9edef;
+            padding: 14px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+            border-left: 5px solid #00a884;
+            animation: slideIn 0.3s ease;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+        .toast i {
+            color: #00a884;
+            font-size: 22px;
+        }
+        .toast .toast-content {
+            flex: 1;
+        }
+        .toast .toast-content strong {
+            display: block;
+            font-weight: 600;
+            color: #e9edef;
+        }
+        .toast .toast-content span {
+            color: #aebac1;
+            font-size: 13px;
+        }
+        .toast .toast-close {
+            background: transparent;
+            border: none;
+            color: #8696a0;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0 4px;
+        }
+        @keyframes slideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(60px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .toast.hide {
+            opacity: 0;
+            transform: translateX(80px);
+        }
+
+        /* ─── MODAL TAMBAH KONTAK ─── */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        .modal-overlay.show {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal {
+            background: #1f2c33;
+            border-radius: 20px;
+            padding: 30px 32px;
+            max-width: 480px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            transform: scale(0.95);
+            transition: 0.25s;
+        }
+        .modal-overlay.show .modal {
+            transform: scale(1);
+        }
+        .modal h2 {
+            font-weight: 500;
+            font-size: 22px;
+            margin-bottom: 6px;
+            color: #e9edef;
+        }
+        .modal p {
+            color: #8696a0;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .modal .field {
+            margin-bottom: 18px;
+        }
+        .modal .field label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #aebac1;
+            margin-bottom: 6px;
+        }
+        .modal .field input,
+        .modal .field textarea {
+            width: 100%;
+            background: #111b21;
+            border: 1px solid #2b3943;
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #e9edef;
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+            transition: 0.2s;
+        }
+        .modal .field input:focus,
+        .modal .field textarea:focus {
+            border-color: #00a884;
+        }
+        .modal .field .code-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .modal .field .code-wrapper input {
+            flex: 1;
+        }
+        .modal .field .code-wrapper button {
+            background: #2b3943;
+            border: none;
+            color: #aebac1;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.15s;
+            white-space: nowrap;
+        }
+        .modal .field .code-wrapper button:hover {
+            background: #3a4a56;
+            color: #e9edef;
+        }
+        .modal .field .member-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #111b21;
+            border-radius: 10px;
+            padding: 8px;
+            border: 1px solid #2b3943;
+        }
+        .modal .field .member-list .member-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .modal .field .member-list .member-item:hover {
+            background: #1f2c33;
+        }
+        .modal .field .member-list .member-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #00a884;
+            cursor: pointer;
+        }
+        .modal .field .member-list .member-item .m-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #2b3943;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            overflow: hidden;
+        }
+        .modal .field .member-list .member-item .m-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .modal .field .member-list .member-item .m-name {
+            font-size: 14px;
+            color: #e9edef;
+        }
+        .modal .actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+        .modal .actions button {
+            padding: 10px 24px;
+            border-radius: 30px;
+            border: none;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .modal .actions .btn-cancel {
+            background: transparent;
+            color: #aebac1;
+        }
+        .modal .actions .btn-cancel:hover {
+            background: #2b3943;
+        }
+        .modal .actions .btn-add {
+            background: #00a884;
+            color: #111b21;
+        }
+        .modal .actions .btn-add:hover {
+            background: #00c9a0;
+        }
+
+        /* ─── MODAL PESAN MASUK ─── */
+        .modal-incoming .modal textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .modal-incoming .modal .incoming-member-select {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .modal-incoming .modal .incoming-member-select select {
+            background: #111b21;
+            border: 1px solid #2b3943;
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #e9edef;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            flex: 1;
+        }
+        .modal-incoming .modal .incoming-member-select select:focus {
+            border-color: #00a884;
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 820px) {
+            .sidebar {
+                width: 100%;
+                min-width: unset;
+                border-right: none;
+            }
+            .sidebar.hidden {
+                display: none;
+            }
+            .chat-area .back-btn {
+                display: flex !important;
+            }
+            .chat-messages {
+                padding: 16px 14px 10px 14px;
+            }
+            .message {
+                max-width: 80%;
+            }
+            .app {
+                max-height: 100vh;
+                height: 100vh;
+                border-radius: 0;
+            }
+            .chat-header .ch-actions button {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+        }
+        @media (max-width: 480px) {
+            .sidebar-header {
+                padding: 12px 14px;
+            }
+            .contact-item {
+                padding: 8px 14px;
+                gap: 10px;
+            }
+            .contact-item .c-avatar {
+                width: 42px;
+                height: 42px;
+                font-size: 16px;
+            }
+            .chat-header {
+                padding: 6px 12px;
+                min-height: 52px;
+            }
+            .chat-input {
+                padding: 6px 10px;
+                gap: 6px;
+                min-height: 54px;
+            }
+            .chat-input .send-btn {
+                width: 42px;
+                height: 42px;
+                font-size: 18px;
+            }
+            .chat-messages {
+                padding: 12px 10px 8px 10px;
+            }
+            .message {
+                max-width: 88%;
+                font-size: 14px;
+                padding: 6px 10px 4px 10px;
+            }
+            .modal {
+                padding: 20px;
+            }
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2b3943;
+            border-radius: 4px;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .text-muted {
+            color: #8696a0;
+        }
+    </style>
 </head>
 <body>
 
-<div id="tabbar">
-  <button class="tab-btn file-tab" id="fileTabBtn">File</button>
-  <button class="tab-btn active" data-tab="home">Beranda</button>
-  <button class="tab-btn" data-tab="insert">Sisipkan</button>
-  <button class="tab-btn" data-tab="design">Desain</button>
-  <button class="tab-btn" data-tab="layout">Tata Letak</button>
-  <button class="tab-btn" data-tab="references">Referensi</button>
-  <button class="tab-btn" data-tab="mailings">Mailings</button>
-</div>
+    <div class="app">
 
-<div id="ribbon">
-<div class="ribbon-panel active" id="tab-home">
-  <div class="group">
-    <select id="fontName" title="Font">
-      <option>Calibri</option><option>Arial</option><option>Georgia</option>
-      <option>Times New Roman</option><option>Courier New</option><option>Verdana</option>
-    </select>
-    <select id="fontSize" title="Ukuran">
-      <option>10</option><option>11</option><option selected>12</option>
-      <option>14</option><option>16</option><option>18</option><option>24</option><option>28</option><option>36</option>
-    </select>
-  </div>
-  <div class="group">
-    <button data-cmd="bold"><b>B</b></button>
-    <button data-cmd="italic"><i>I</i></button>
-    <button data-cmd="underline"><u>U</u></button>
-    <button data-cmd="strikeThrough"><s>S</s></button>
-    <button data-cmd="superscript" title="Superscript">x²</button>
-    <button data-cmd="subscript" title="Subscript">x₂</button>
-    <button data-cmd="removeFormat" title="Hapus semua format">Hapus Format</button>
-  </div>
-  <div class="group">
-    <button data-cmd="justifyLeft">⇤</button>
-    <button data-cmd="justifyCenter">≡</button>
-    <button data-cmd="justifyRight">⇥</button>
-    <button data-cmd="justifyFull">☰</button>
-  </div>
-  <div class="group">
-    <button data-cmd="insertUnorderedList">• List</button>
-    <button data-cmd="insertOrderedList">1. List</button>
-    <button data-cmd="indent">Indent</button>
-    <button data-cmd="outdent">Outdent</button>
-  </div>
-  <div class="group">
-    <select id="blockFormat" title="Gaya">
-      <option value="P">Normal</option>
-      <option value="H1">Heading 1</option>
-      <option value="H2">Heading 2</option>
-      <option value="H3">Heading 3</option>
-    </select>
-    <select id="lineSpacing" title="Spasi Baris">
-      <option value="1">Spasi 1.0</option>
-      <option value="1.15">Spasi 1.15</option>
-      <option value="1.5" selected>Spasi 1.5</option>
-      <option value="2">Spasi 2.0</option>
-      <option value="2.5">Spasi 2.5</option>
-      <option value="3">Spasi 3.0</option>
-    </select>
-    <select id="textCase" title="Ubah Huruf">
-      <option value="">Ubah Huruf...</option>
-      <option value="upper">HURUF BESAR</option>
-      <option value="lower">huruf kecil</option>
-      <option value="title">Setiap Kata Besar</option>
-    </select>
-  </div>
-  <div class="group">
-    <input type="color" id="foreColor" title="Warna teks" value="#000000" />
-    <input type="color" id="hiliteColor" title="Highlight" value="#ffff00" />
-  </div>
-  <div class="group">
-    <button data-cmd="undo">↶</button>
-    <button data-cmd="redo">↷</button>
-    <button id="findReplaceBtn" title="Cari & Ganti">🔍 Cari</button>
-    <button id="printBtn">🖨️ Print</button>
-  </div>
-  <div class="group">
-    <select id="paperSize" title="Ukuran Kertas">
-      <option value="A4">A4</option>
-      <option value="Letter">Letter</option>
-      <option value="Legal">Legal</option>
-      <option value="F4">F4</option>
-    </select>
-  </div>
-  <div class="group" style="gap:6px;">
-    <span class="mini-label">Margin:</span>
-    <span class="mini-label">Atas</span><input type="number" id="marginTop" value="2.54" step="0.1" min="0" />
-    <span class="mini-label">Bawah</span><input type="number" id="marginBottom" value="2.54" step="0.1" min="0" />
-    <span class="mini-label">Kiri</span><input type="number" id="marginLeft" value="2.54" step="0.1" min="0" />
-    <span class="mini-label">Kanan</span><input type="number" id="marginRight" value="2.54" step="0.1" min="0" />
-    <select id="marginUnit">
-      <option value="cm">cm</option>
-      <option value="in">inci</option>
-    </select>
-    <button id="applyMarginBtn">Terapkan</button>
-  </div>
-  <div class="group">
-    <button id="newBtn">Baru</button>
-    <button id="openBtn">Buka File</button>
-    <button id="saveBtn" style="background:#2b7de9;color:white;font-weight:bold;">💾 Simpan (.docx)</button>
-  </div>
-</div>
+        <div class="main">
 
-<div class="ribbon-panel" id="tab-insert">
-  <div class="group">
-    <button id="blankPageBtn">📄 Halaman Kosong</button>
-    <button id="pageBreakInsertBtn">⏎ Page Break</button>
-  </div>
-  <div class="group">
-    <button id="insertTableBtn">▦ Tabel</button>
-    <button id="insertImageBtn">🖼️ Gambar</button>
-  </div>
-  <div class="group">
-    <select id="shapeSelect" title="Sisipkan Bentuk">
-      <option value="">Shapes...</option>
-      <option value="rect">▭ Rectangle</option>
-      <option value="roundrect">▢ Rounded Rectangle</option>
-      <option value="oval">◯ Oval</option>
-      <option value="triangle">△ Triangle</option>
-      <option value="diamond">◇ Diamond</option>
-      <option value="arrow-right">→ Panah Kanan</option>
-      <option value="arrow-left">← Panah Kiri</option>
-      <option value="arrow-up">↑ Panah Atas</option>
-      <option value="arrow-down">↓ Panah Bawah</option>
-      <option value="arrow-double">↔ Panah Dua Arah</option>
-      <option value="star">★ Bintang</option>
-      <option value="callout">💬 Callout</option>
-      <option value="line">─ Garis Lurus</option>
-      <option value="pentagon">⬠ Pentagon</option>
-      <option value="cross">✚ Tanda Plus</option>
-    </select>
-    <button id="hrLineBtn" title="Sisip garis horizontal penuh">─ Garis</button>
-  </div>
-  <div class="group">
-    <button id="textBoxBtn">📝 Text Box</button>
-  </div>
-  <div class="group">
-    <button id="headerBtn">Header</button>
-    <button id="footerToggleBtn">Footer</button>
-    <button id="pageNumberInsertBtn">Page Number</button>
-  </div>
-  <div class="group">
-    <button id="insertDateBtn">📅 Date &amp; Time</button>
-  </div>
-  <div class="group">
-    <select id="symbolSelect" title="Symbol">
-      <option value="">Symbol...</option>
-      <option value="©">© Copyright</option>
-      <option value="®">® Registered</option>
-      <option value="™">™ Trademark</option>
-      <option value="€">€ Euro</option>
-      <option value="£">£ Pound</option>
-      <option value="¥">¥ Yen</option>
-      <option value="§">§ Section</option>
-      <option value="¶">¶ Paragraph</option>
-      <option value="•">• Bullet</option>
-      <option value="†">† Dagger</option>
-      <option value="±">± Plus-minus</option>
-      <option value="∞">∞ Infinity</option>
-      <option value="½">½ Half</option>
-      <option value="α">α Alpha</option>
-      <option value="β">β Beta</option>
-      <option value="→">→ Arrow</option>
-    </select>
-  </div>
-</div>
+            <!-- SIDEBAR -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <div class="avatar" id="myAvatar">
+                        <img src="https://ui-avatars.com/api/?name=Saya&background=00a884&color=fff&size=40" alt="Saya" />
+                    </div>
+                    <div class="actions">
+                        <button title="Tambah Kontak" id="addContactBtn" aria-label="Tambah kontak">
+                            <i class="fas fa-user-plus"></i>
+                        </button>
+                        <button title="Buat Grup" id="createGroupBtn" aria-label="Buat grup">
+                            <i class="fas fa-users"></i>
+                        </button>
+                        <button title="Status" aria-label="Status"><i class="fas fa-circle"></i></button>
+                        <button title="Menu" aria-label="Menu"><i class="fas fa-ellipsis-v"></i></button>
+                    </div>
+                </div>
 
-<div class="ribbon-panel" id="tab-design">
-  <div class="group">
-    <span class="mini-label">Warna Halaman:</span>
-    <input type="color" id="pageColorPicker" value="#ffffff" />
-  </div>
-  <div class="group">
-    <button id="pageBorderBtn">▢ Page Borders</button>
-  </div>
-  <div class="group">
-    <button id="watermarkBtn">Watermark</button>
-  </div>
-</div>
+                <div class="search-bar">
+                    <div class="search-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Cari nama atau kode..." id="searchInput" />
+                        <span class="search-hint"><i class="fas fa-key"></i></span>
+                    </div>
+                </div>
 
-<div class="ribbon-panel" id="tab-layout">
-  <div class="group">
-    <span class="mini-label">Orientasi:</span>
-    <select id="orientationSelect">
-      <option value="portrait">Portrait</option>
-      <option value="landscape">Landscape</option>
-    </select>
-  </div>
-  <div class="group">
-    <span class="mini-label">Margin Cepat:</span>
-    <button id="marginPresetNormal">Normal</button>
-    <button id="marginPresetNarrow">Sempit</button>
-    <button id="marginPresetWide">Lebar</button>
-  </div>
-  <div class="group">
-    <span class="mini-label">Kolom:</span>
-    <select id="columnsSelect">
-      <option value="1">Satu</option>
-      <option value="2">Dua</option>
-      <option value="3">Tiga</option>
-    </select>
-  </div>
-</div>
+                <div class="contact-list" id="contactList">
+                    <!-- contacts injected by JS -->
+                </div>
+            </aside>
 
-<div class="ribbon-panel" id="tab-references">
-  <div class="group">
-    <button id="tocBtn">📑 Daftar Isi Otomatis</button>
-  </div>
-  <div class="group">
-    <button id="citationBtn">Insert Citation</button>
-    <button id="footnoteBtn">Insert Footnote</button>
-  </div>
-</div>
+            <!-- CHAT AREA -->
+            <section class="chat-area" id="chatArea">
+                <div class="chat-header" id="chatHeader">
+                    <button class="back-btn" id="backBtn" aria-label="Kembali"><i class="fas fa-arrow-left"></i></button>
+                    <div class="ch-avatar" id="chAvatar">
+                        <img src="https://ui-avatars.com/api/?name=?&background=2b3943&color=fff&size=40" alt="Contact" />
+                    </div>
+                    <div class="ch-info">
+                        <div class="ch-name" id="chName">Pilih kontak</div>
+                        <div class="ch-status" id="chStatus">Klik untuk memulai chat</div>
+                    </div>
+                    <div class="ch-actions">
+                        <button title="Pesan Masuk (simulasi)" id="incomingBtn" aria-label="Pesan masuk">
+                            <i class="fas fa-envelope"></i>
+                        </button>
+                        <button title="Panggilan video" aria-label="Panggilan video"><i class="fas fa-video"></i></button>
+                        <button title="Panggilan suara" aria-label="Panggilan suara"><i class="fas fa-phone"></i></button>
+                        <button title="Menu" aria-label="Menu"><i class="fas fa-ellipsis-v"></i></button>
+                    </div>
+                </div>
 
-<div class="ribbon-panel" id="tab-mailings">
-  <div class="group">
-    <button id="mailMergeInfoBtn">Start Mail Merge</button>
-    <button id="mailMergeInfoBtn2">Insert Merge Field</button>
-  </div>
-</div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="empty-state" id="emptyState">
+                        <i class="fab fa-whatsapp"></i>
+                        <h2>WhatsApp Web</h2>
+                        <p>Pilih kontak atau grup di sebelah kiri untuk mulai mengirim pesan</p>
+                    </div>
+                </div>
 
-</div>
+                <div class="chat-input" id="chatInput">
+                    <div class="input-actions">
+                        <button title="Emoji" aria-label="Emoji"><i class="far fa-smile"></i></button>
+                        <button title="Lampiran" aria-label="Lampiran"><i class="fas fa-paperclip"></i></button>
+                    </div>
+                    <div class="input-wrap">
+                        <input type="text" placeholder="Ketik pesan..." id="msgInput" />
+                    </div>
+                    <button class="send-btn" id="sendBtn" aria-label="Kirim" disabled>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </section>
 
-<div id="backstage">
-  <div id="backstage-sidebar">
-    <button id="bsBackBtn" style="font-size:20px;padding:12px 24px;">←</button>
-    <button class="active" data-bs="home">Home</button>
-    <button data-bs="new">New</button>
-    <button data-bs="open">Open</button>
-    <button id="bsPrintBtn">Print</button>
-    <button id="bsCloseBtn">Close</button>
-  </div>
-  <div id="backstage-main">
-    <h1>Good morning</h1>
-    <div style="margin-bottom:10px;font-weight:600;">New</div>
-    <div class="template-row">
-      <div class="template-card" id="bsBlankDoc">
-        <div class="thumb" style="background:white;"></div>
-        <div>Blank document</div>
-      </div>
-      <div class="template-card">
-        <div class="thumb">Resume</div>
-        <div>Modern resume</div>
-      </div>
-      <div class="template-card">
-        <div class="thumb">Calendar</div>
-        <div>Snapshot calendar</div>
-      </div>
-      <div class="template-card">
-        <div class="thumb">Report</div>
-        <div>Simple report</div>
-      </div>
+        </div>
     </div>
-    <div style="font-weight:600;margin-bottom:6px;">Recent</div>
-    <table class="recent-table">
-      <thead><tr><th>Name</th><th>Modified</th></tr></thead>
-      <tbody id="recentFilesBody">
-        <tr><td colspan="2" style="color:#999;">Belum ada dokumen yang dibuka/disimpan sesi ini.</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<div id="tableToolbar">
-  <span class="drag-hint" title="Tabel bisa diseret (drag) untuk dipindah">⠿ Seret tabel</span>
-  <span>Warna garis:</span>
-  <input type="color" id="tableBorderColor" value="#999999" />
-  <button id="tableDeleteBtn">✕ Hapus Tabel</button>
-</div>
-
-<div id="statusbar">
-  <span id="statusText">Dokumen Baru</span>
-  <span id="wordCount">0 kata</span>
-</div>
-
-<input type="file" id="fileInput" accept=".docx,.doc,.html,.htm,.txt" />
-<input type="file" id="imageInput" accept="image/*" />
-
-<div id="page-wrap"></div>
-
-<div id="toast"></div>
-
-<script>
-const pageWrap = document.getElementById('page-wrap');
-const statusText = document.getElementById('statusText');
-const wordCount = document.getElementById('wordCount');
-const toast = document.getElementById('toast');
-
-function showToast(msg) {
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
-}
-
-// --- Ukuran kertas (px @ 96dpi) ---
-const paperSizesPx = {
-  A4: { width: 794, minHeight: 1123 },
-  Letter: { width: 816, minHeight: 1056 },
-  Legal: { width: 816, minHeight: 1344 },
-  F4: { width: 793, minHeight: 1247 },
-};
-let currentMarginPx = { top: 96, right: 96, bottom: 96, left: 96 }; // 2.54cm default
-let lastFocusedPage = null;
-
-// Each toolbar control that needs a text selection gets its OWN tracker,
-// so applying font size doesn't stomp on the range line-spacing needs (and
-// vice versa) -- that cross-contamination was why line spacing looked broken.
-function createSelectionTracker() {
-  let range = null;
-  function capture() {
-    const sel = window.getSelection();
-    if (!sel.rangeCount) return;
-    const r = sel.getRangeAt(0);
-    if (r.collapsed) return;
-    const node = r.commonAncestorContainer;
-    const el = node.nodeType === 3 ? node.parentElement : node;
-    if (el && el.closest && el.closest('.page')) {
-      range = r.cloneRange();
-    }
-  }
-  return { capture, get: () => range, set: (r) => { range = r; } };
-}
-
-const fontSizeTracker = createSelectionTracker();
-const lineSpacingTracker = createSelectionTracker();
-const textCaseTracker = createSelectionTracker();
-const trackers = [fontSizeTracker, lineSpacingTracker, textCaseTracker];
-function captureAllTrackers() { trackers.forEach(t => t.capture()); }
-
-function attachSelectionCapture(el, tracker) {
-  el.addEventListener('mousedown', tracker.capture);
-  el.addEventListener('focus', tracker.capture);
-}
-
-function closestPageFromRange(range) {
-  const node = range.commonAncestorContainer;
-  const el = node.nodeType === 3 ? node.parentElement : node;
-  return el ? el.closest('.page') : null;
-}
-
-function toPx(value, unit) {
-  if (unit === 'in') return Math.round(value * 96);
-  return Math.round(value * 37.795); // cm
-}
-
-function applyPageSettingsToAll() {
-  const size = paperSizesPx[document.getElementById('paperSize').value];
-  const m = currentMarginPx;
-  document.querySelectorAll('.page').forEach(p => {
-    p.style.width = size.width + 'px';
-    p.style.minHeight = size.minHeight + 'px';
-    p.style.padding = `${m.top}px ${m.right}px ${m.bottom}px ${m.left}px`;
-  });
-  document.querySelectorAll('.page-footer').forEach(f => { f.style.width = size.width + 'px'; });
-}
-
-document.getElementById('paperSize').addEventListener('change', applyPageSettingsToAll);
-
-document.getElementById('applyMarginBtn').addEventListener('click', () => {
-  const unit = document.getElementById('marginUnit').value;
-  const top = parseFloat(document.getElementById('marginTop').value);
-  const bottom = parseFloat(document.getElementById('marginBottom').value);
-  const left = parseFloat(document.getElementById('marginLeft').value);
-  const right = parseFloat(document.getElementById('marginRight').value);
-  if ([top, bottom, left, right].some(v => isNaN(v) || v < 0)) {
-    alert('Masukkan angka margin yang valid di semua kolom.');
-    return;
-  }
-  currentMarginPx = { top: toPx(top, unit), bottom: toPx(bottom, unit), left: toPx(left, unit), right: toPx(right, unit) };
-  applyPageSettingsToAll();
-  showToast(`Margin diterapkan (${unit === 'in' ? 'inci' : 'cm'}): atas ${top}, bawah ${bottom}, kiri ${left}, kanan ${right}`);
-});
-
-// --- Halaman ---
-function createPage(initialHtml, afterWrapper) {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'page-wrapper';
-
-  const label = document.createElement('div');
-  label.className = 'page-label';
-  wrapper.appendChild(label);
-
-  const size = paperSizesPx[document.getElementById('paperSize').value];
-  const m = currentMarginPx;
-  const page = document.createElement('div');
-  page.className = 'page';
-  page.contentEditable = 'true';
-  page.spellcheck = true;
-  page.style.width = size.width + 'px';
-  page.style.minHeight = size.minHeight + 'px';
-  page.style.padding = `${m.top}px ${m.right}px ${m.bottom}px ${m.left}px`;
-  page.innerHTML = initialHtml || '<p><br></p>';
-  wrapper.appendChild(page);
-
-  const footer = document.createElement('div');
-  footer.className = 'page-footer';
-  footer.style.width = size.width + 'px';
-  wrapper.appendChild(footer);
-
-  const addBtn = document.createElement('button');
-  addBtn.className = 'add-page-under';
-  addBtn.textContent = '+ Tambah Halaman Baru di Sini';
-  wrapper.appendChild(addBtn);
-
-  if (afterWrapper && afterWrapper.nextSibling) {
-    pageWrap.insertBefore(wrapper, afterWrapper.nextSibling);
-  } else {
-    pageWrap.appendChild(wrapper);
-  }
-  renumberPages();
-  return page;
-}
-
-function renumberPages() {
-  const wrappers = document.querySelectorAll('.page-wrapper');
-  const total = wrappers.length;
-  wrappers.forEach((w, i) => {
-    w.querySelector('.page-label').textContent = 'Halaman ' + (i + 1);
-    const footer = w.querySelector('.page-footer');
-    const custom = footer.dataset.customText;
-    footer.textContent = custom ? `${custom} — Halaman ${i + 1} dari ${total}` : `Halaman ${i + 1} dari ${total}`;
-  });
-}
-
-function getAllPages() {
-  return Array.from(document.querySelectorAll('.page'));
-}
-
-// =====================================================================
-// UNDO / REDO — snapshot seluruh isi dokumen, jadi SEMUA aksi (ketik,
-// insert tabel/gambar/shape, ubah warna, hapus, dsb) bisa di-undo, bukan
-// cuma yang tercatat oleh undo bawaan browser.
-// =====================================================================
-let undoStack = [];
-let redoStack = [];
-let lastSnapshot = null;
-let snapshotDebounce = null;
-
-function commitNow() {
-  clearTimeout(snapshotDebounce);
-  const current = pageWrap.innerHTML;
-  if (lastSnapshot !== null && current !== lastSnapshot) {
-    undoStack.push(lastSnapshot);
-    if (undoStack.length > 150) undoStack.shift();
-    redoStack = [];
-  }
-  lastSnapshot = current;
-}
-
-function scheduleSnapshot() {
-  clearTimeout(snapshotDebounce);
-  snapshotDebounce = setTimeout(commitNow, 500);
-}
-
-function restoreSnapshot(html) {
-  pageWrap.innerHTML = html;
-  lastSnapshot = html;
-  renumberPages();
-  updateWordCount();
-  tableToolbar.classList.remove('show');
-  activeTable = null;
-}
-
-function performUndo() {
-  commitNow();
-  if (undoStack.length === 0) { showToast('Tidak ada lagi yang bisa di-undo.'); return; }
-  redoStack.push(lastSnapshot);
-  restoreSnapshot(undoStack.pop());
-}
-
-function performRedo() {
-  if (redoStack.length === 0) { showToast('Tidak ada lagi yang bisa di-redo.'); return; }
-  undoStack.push(lastSnapshot);
-  restoreSnapshot(redoStack.pop());
-}
-
-// Delegated listeners on pageWrap — these survive undo/redo's innerHTML
-// replacement since they're bound to the container, not individual pages.
-pageWrap.addEventListener('focusin', (e) => {
-  const page = e.target.closest('.page');
-  if (page) lastFocusedPage = page;
-});
-pageWrap.addEventListener('input', (e) => {
-  if (e.target.closest('.page')) { updateWordCount(); scheduleAutoSave(); scheduleSnapshot(); }
-});
-pageWrap.addEventListener('mouseup', (e) => {
-  if (e.target.closest('.page')) captureAllTrackers();
-});
-pageWrap.addEventListener('keyup', (e) => {
-  if (e.target.closest('.page')) captureAllTrackers();
-});
-pageWrap.addEventListener('click', (e) => {
-  if (e.target.classList.contains('add-page-under')) {
-    commitNow();
-    const wrapper = e.target.closest('.page-wrapper');
-    const p = createPage('<p><br></p>', wrapper);
-    commitNow();
-    p.focus();
-    p.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-});
-
-// --- Tabel: klik untuk munculkan toolbar (warna garis + hapus) ---
-const tableToolbar = document.getElementById('tableToolbar');
-let activeTable = null;
-let draggedEl = null;
-
-pageWrap.addEventListener('click', (e) => {
-  const table = e.target.closest('table');
-  if (table) {
-    activeTable = table;
-    const rect = table.getBoundingClientRect();
-    tableToolbar.style.left = Math.max(8, rect.left) + 'px';
-    tableToolbar.style.top = Math.max(8, rect.top - 40) + 'px';
-    tableToolbar.classList.add('show');
-  } else {
-    tableToolbar.classList.remove('show');
-    activeTable = null;
-  }
-});
-document.getElementById('tableBorderColor').addEventListener('input', (e) => {
-  if (!activeTable) return;
-  activeTable.style.borderColor = e.target.value;
-  activeTable.querySelectorAll('td, th').forEach((cell) => { cell.style.borderColor = e.target.value; });
-});
-document.getElementById('tableBorderColor').addEventListener('change', () => {
-  // 'change' baru terpicu sekali saat pemilihan warna selesai -- ini titik
-  // yang tepat untuk mencatat langkah undo (kalau dipasang di 'input' akan
-  // mencatat puluhan langkah saat menggeser color picker).
-  commitNow();
-});
-document.getElementById('tableDeleteBtn').addEventListener('click', () => {
-  if (!activeTable) return;
-  if (confirm('Hapus tabel ini?')) {
-    commitNow();
-    activeTable.remove();
-    commitNow();
-    tableToolbar.classList.remove('show');
-    activeTable = null;
-    updateWordCount();
-  }
-});
-
-// =====================================================================
-// GESER TABEL & SHAPE — pakai Pointer Events, bukan drag HTML5.
-// Drag HTML5 bawaan browser umumnya TIDAK berfungsi di layar sentuh
-// (HP/tablet), jadi tabel/shape terasa "tidak bisa dipindah" di HP.
-// Pointer Events menyatukan mouse & sentuhan sehingga geser tetap jalan
-// di kedua jenis perangkat.
-// =====================================================================
-let ptrDrag = null; // { el }
-
-function beginPointerDrag(el, e) {
-  e.preventDefault();
-  ptrDrag = { el };
-  el.style.opacity = '0.45';
-  if (el.setPointerCapture) { try { el.setPointerCapture(e.pointerId); } catch (err) {} }
-}
-
-function dropElementAtPoint(el, clientX, clientY) {
-  let range = null;
-  if (document.caretRangeFromPoint) {
-    range = document.caretRangeFromPoint(clientX, clientY);
-  } else if (document.caretPositionFromPoint) {
-    const pos = document.caretPositionFromPoint(clientX, clientY);
-    if (pos) { range = document.createRange(); range.setStart(pos.offsetNode, pos.offset); }
-  }
-  if (range) {
-    el.remove();
-    range.insertNode(el);
-    return true;
-  }
-  return false;
-}
-
-// Pegangan "⠿ Seret tabel" di toolbar tabel -> mulai geser tabel aktif
-document.querySelector('#tableToolbar .drag-hint').addEventListener('pointerdown', (e) => {
-  if (!activeTable) return;
-  beginPointerDrag(activeTable, e);
-});
-
-// Sentuh/klik langsung pada shape (kotak, panah, dst.) -> mulai geser shape itu
-pageWrap.addEventListener('pointerdown', (e) => {
-  const shape = e.target.closest('.shape-block');
-  if (shape) beginPointerDrag(shape, e);
-});
-
-document.addEventListener('pointerup', (e) => {
-  if (!ptrDrag) return;
-  const el = ptrDrag.el;
-  el.style.opacity = '';
-  commitNow();
-  dropElementAtPoint(el, e.clientX, e.clientY);
-  commitNow();
-  ptrDrag = null;
-  updateWordCount();
-});
-document.addEventListener('pointercancel', () => {
-  if (ptrDrag) { ptrDrag.el.style.opacity = ''; ptrDrag = null; }
-});
-
-// Drag HTML5 klasik disisakan untuk Text Box saja (masih berguna di desktop;
-// mengetik di dalam text box butuh fokus normal, jadi tidak dipindah ke
-// pointerdown supaya tidak bentrok dengan penempatan kursor teks).
-pageWrap.addEventListener('dragstart', (e) => {
-  const el = e.target.closest('.textbox');
-  if (el) { draggedEl = el; e.dataTransfer.effectAllowed = 'move'; }
-});
-pageWrap.addEventListener('dragover', (e) => {
-  if (draggedEl) e.preventDefault();
-});
-pageWrap.addEventListener('drop', (e) => {
-  if (!draggedEl) return;
-  e.preventDefault();
-  commitNow();
-  dropElementAtPoint(draggedEl, e.clientX, e.clientY);
-  commitNow();
-  draggedEl = null;
-  updateWordCount();
-});
-
-// Ctrl+Z / Ctrl+Y (atau Ctrl+Shift+Z) untuk undo/redo custom kita
-document.addEventListener('keydown', (e) => {
-  const ctrl = e.ctrlKey || e.metaKey;
-  if (!ctrl) return;
-  if (e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); performUndo(); }
-  else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) { e.preventDefault(); performRedo(); }
-});
-
-// Hampir semua tombol/dropdown ribbon otomatis dianggap satu langkah undo
-document.getElementById('ribbon').addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if (!btn || ['undoBtn', 'redoBtn'].includes(btn.id)) return;
-  commitNow();
-});
-document.getElementById('ribbon').addEventListener('change', () => { commitNow(); });
-
-// (Tambah halaman kini dari tab "Sisipkan" -> Halaman Kosong / Page Break)
-
-function withFocusedPage(fn) {
-  const page = lastFocusedPage || document.querySelector('.page');
-  if (page) { page.focus(); fn(page); }
-}
-
-document.querySelectorAll('button[data-cmd]').forEach((btn) => {
-  btn.addEventListener('click', () => withFocusedPage(() => document.execCommand(btn.dataset.cmd, false, null)));
-});
-
-document.getElementById('fontName').addEventListener('change', (e) => {
-  withFocusedPage(() => document.execCommand('fontName', false, e.target.value));
-});
-
-attachSelectionCapture(document.getElementById('fontSize'), fontSizeTracker);
-document.getElementById('fontSize').addEventListener('change', (e) => {
-  const pt = e.target.value;
-  const savedRange = fontSizeTracker.get();
-  if (!savedRange) { alert('Blok/pilih teks dulu (dengan mouse) sebelum mengubah ukuran huruf.'); return; }
-  try {
-    const span = document.createElement('span');
-    span.style.fontSize = pt + 'pt';
-    const contents = savedRange.extractContents();
-    span.appendChild(contents);
-    savedRange.insertNode(span);
-    const page = span.closest ? span.closest('.page') : null;
-    if (page) { lastFocusedPage = page; page.focus(); }
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    const newRange = document.createRange();
-    newRange.selectNodeContents(span);
-    sel.addRange(newRange);
-    fontSizeTracker.set(newRange.cloneRange());
-    updateWordCount();
-  } catch (err) {
-    alert('Gagal mengubah ukuran huruf, coba blok teksnya lagi lalu ulangi.');
-  }
-});
-
-document.getElementById('blockFormat').addEventListener('change', (e) => {
-  withFocusedPage(() => document.execCommand('formatBlock', false, e.target.value));
-});
-
-// --- Spasi baris (line spacing) ---
-attachSelectionCapture(document.getElementById('lineSpacing'), lineSpacingTracker);
-document.getElementById('lineSpacing').addEventListener('change', (e) => {
-  const val = e.target.value;
-  let range = lineSpacingTracker.get();
-  if (!range) {
-    const page = lastFocusedPage || document.querySelector('.page');
-    if (!page) return;
-    const sel = window.getSelection();
-    if (sel.rangeCount) range = sel.getRangeAt(0);
-  }
-  if (!range) { alert('Klik di dalam paragraf dulu sebelum mengubah spasi baris.'); return; }
-  const page = closestPageFromRange(range);
-  if (!page) { alert('Klik di dalam halaman dokumen dulu sebelum mengubah spasi baris.'); return; }
-  const candidates = page.querySelectorAll('p, li, h1, h2, h3');
-  let applied = false;
-  candidates.forEach((c) => {
-    if (range.intersectsNode(c)) { c.style.lineHeight = val; applied = true; }
-  });
-  if (!applied) {
-    const node = range.startContainer;
-    const el = node.nodeType === 3 ? node.parentElement : node;
-    const block = el ? el.closest('p, li, h1, h2, h3') : null;
-    if (block) { block.style.lineHeight = val; applied = true; }
-  }
-  if (!applied) { showToast('Klik langsung di dalam sebuah paragraf, lalu coba lagi.'); return; }
-  lastFocusedPage = page;
-  page.focus();
-  showToast('Spasi baris diterapkan: ' + val);
-});
-
-// --- Ubah huruf besar/kecil ---
-attachSelectionCapture(document.getElementById('textCase'), textCaseTracker);
-document.getElementById('textCase').addEventListener('change', (e) => {
-  const mode = e.target.value;
-  if (!mode) return;
-  const savedRange = textCaseTracker.get();
-  if (!savedRange) { alert('Blok teks dulu sebelum mengubah huruf.'); e.target.value = ''; return; }
-  const span = document.createElement('span');
-  const contents = savedRange.extractContents();
-  span.appendChild(contents);
-  let text = span.textContent;
-  if (mode === 'upper') text = text.toUpperCase();
-  else if (mode === 'lower') text = text.toLowerCase();
-  else if (mode === 'title') text = text.replace(/\S+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-  span.textContent = text;
-  savedRange.insertNode(span);
-  const page = span.closest('.page');
-  if (page) { lastFocusedPage = page; page.focus(); }
-  const sel = window.getSelection();
-  sel.removeAllRanges();
-  const nr = document.createRange();
-  nr.selectNodeContents(span);
-  sel.addRange(nr);
-  textCaseTracker.set(nr.cloneRange());
-  e.target.value = '';
-  updateWordCount();
-});
-
-document.getElementById('foreColor').addEventListener('input', (e) => {
-  withFocusedPage(() => document.execCommand('foreColor', false, e.target.value));
-});
-document.getElementById('hiliteColor').addEventListener('input', (e) => {
-  withFocusedPage(() => document.execCommand('hiliteColor', false, e.target.value));
-});
-
-document.getElementById('insertTableBtn').addEventListener('click', () => {
-  const rows = parseInt(prompt('Jumlah baris?', '3'), 10) || 3;
-  const cols = parseInt(prompt('Jumlah kolom?', '3'), 10) || 3;
-  let html = '<table>';
-  for (let r = 0; r < rows; r++) {
-    html += '<tr>';
-    for (let c = 0; c < cols; c++) html += '<td>&nbsp;</td>';
-    html += '</tr>';
-  }
-  html += '</table><p><br></p>';
-  withFocusedPage(() => document.execCommand('insertHTML', false, html));
-});
-
-document.getElementById('hrLineBtn').addEventListener('click', () => {
-  withFocusedPage(() => document.execCommand('insertHorizontalRule', false, null));
-});
-
-document.getElementById('insertDateBtn').addEventListener('click', () => {
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-  withFocusedPage(() => document.execCommand('insertText', false, dateStr));
-});
-
-document.getElementById('findReplaceBtn').addEventListener('click', () => {
-  const page = lastFocusedPage || document.querySelector('.page');
-  if (!page) return;
-  const find = prompt('Cari kata/kalimat:');
-  if (!find) return;
-  const replace = prompt('Ganti dengan:', '') ?? '';
-  const walker = document.createTreeWalker(page, NodeFilter.SHOW_TEXT, null);
-  let count = 0;
-  let node;
-  const textNodes = [];
-  while ((node = walker.nextNode())) textNodes.push(node);
-  textNodes.forEach((tn) => {
-    if (tn.nodeValue.includes(find)) {
-      const parts = tn.nodeValue.split(find);
-      count += parts.length - 1;
-      tn.nodeValue = parts.join(replace);
-    }
-  });
-  updateWordCount();
-  showToast(count > 0 ? `Diganti ${count}x: "${find}" → "${replace}"` : `Tidak ditemukan: "${find}"`);
-});
-
-document.getElementById('printBtn').addEventListener('click', () => window.print());
-
-const imageInput = document.getElementById('imageInput');
-document.getElementById('insertImageBtn').addEventListener('click', () => imageInput.click());
-imageInput.addEventListener('change', () => {
-  const file = imageInput.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    withFocusedPage(() => document.execCommand('insertHTML', false, `<img src="${e.target.result}" alt="gambar" />`));
-  };
-  reader.readAsDataURL(file);
-  imageInput.value = '';
-});
-
-// --- Tab switching ---
-document.querySelectorAll('.tab-btn[data-tab]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.ribbon-panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-  });
-});
-
-// --- Backstage (File menu) ---
-const recentFiles = []; // in-memory only for this session
-function addRecentFile(name) {
-  recentFiles.unshift({ name, time: new Date() });
-  renderRecentFiles();
-}
-function renderRecentFiles() {
-  const body = document.getElementById('recentFilesBody');
-  if (recentFiles.length === 0) {
-    body.innerHTML = '<tr><td colspan="2" style="color:#999;">Belum ada dokumen yang dibuka/disimpan sesi ini.</td></tr>';
-    return;
-  }
-  body.innerHTML = recentFiles.map(f =>
-    `<tr><td>📄 ${f.name}</td><td>${f.time.toLocaleTimeString('id-ID')}</td></tr>`
-  ).join('');
-}
-
-document.getElementById('fileTabBtn').addEventListener('click', () => {
-  document.getElementById('backstage').classList.add('show');
-});
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') document.getElementById('backstage').classList.remove('show');
-});
-document.getElementById('bsCloseBtn').addEventListener('click', () => {
-  document.getElementById('backstage').classList.remove('show');
-});
-document.getElementById('bsBackBtn').addEventListener('click', () => {
-  document.getElementById('backstage').classList.remove('show');
-});
-document.getElementById('bsBlankDoc').addEventListener('click', () => {
-  document.getElementById('backstage').classList.remove('show');
-  document.getElementById('newBtn').click();
-});
-document.querySelector('[data-bs="open"]').addEventListener('click', () => {
-  document.getElementById('backstage').classList.remove('show');
-  document.getElementById('openBtn').click();
-});
-document.getElementById('bsPrintBtn').addEventListener('click', () => {
-  document.getElementById('backstage').classList.remove('show');
-  window.print();
-});
-document.querySelectorAll('#backstage-sidebar button[data-bs]').forEach(b => {
-  b.addEventListener('click', () => {
-    document.querySelectorAll('#backstage-sidebar button').forEach(x => x.classList.remove('active'));
-    b.classList.add('active');
-  });
-});
-
-// --- Tab Desain ---
-document.getElementById('pageColorPicker').addEventListener('input', (e) => {
-  document.querySelectorAll('.page').forEach(p => { p.style.background = e.target.value; });
-});
-let bordersOn = false;
-document.getElementById('pageBorderBtn').addEventListener('click', () => {
-  bordersOn = !bordersOn;
-  document.querySelectorAll('.page').forEach(p => {
-    p.style.outline = bordersOn ? '2px solid #333' : 'none';
-    p.style.outlineOffset = bordersOn ? '-10px' : '0';
-  });
-});
-document.getElementById('watermarkBtn').addEventListener('click', () => {
-  const text = prompt('Teks watermark (kosongkan untuk hapus):', 'DRAFT');
-  document.querySelectorAll('.page').forEach(p => {
-    p.style.backgroundImage = text
-      ? `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><text x='50%' y='50%' font-size='40' fill='rgba(0,0,0,0.12)' text-anchor='middle' transform='rotate(-35 200 200)'>${text}</text></svg>`)}")`
-      : 'none';
-    p.style.backgroundRepeat = 'repeat';
-  });
-});
-
-// --- Tab Tata Letak ---
-document.getElementById('orientationSelect').addEventListener('change', (e) => {
-  const landscape = e.target.value === 'landscape';
-  document.querySelectorAll('.page').forEach((p) => {
-    const w = parseInt(p.style.width);
-    const h = parseInt(p.style.minHeight);
-    if (landscape && w < h) { p.style.width = h + 'px'; p.style.minHeight = w + 'px'; }
-    if (!landscape && w > h) { p.style.width = h + 'px'; p.style.minHeight = w + 'px'; }
-  });
-});
-document.getElementById('marginPresetNormal').addEventListener('click', () => setMarginPreset(2.54));
-document.getElementById('marginPresetNarrow').addEventListener('click', () => setMarginPreset(1.27));
-document.getElementById('marginPresetWide').addEventListener('click', () => setMarginPreset(3.81));
-function setMarginPreset(cm) {
-  ['marginTop','marginBottom','marginLeft','marginRight'].forEach(id => { document.getElementById(id).value = cm; });
-  document.getElementById('marginUnit').value = 'cm';
-  document.getElementById('applyMarginBtn').click();
-}
-document.getElementById('columnsSelect').addEventListener('change', (e) => {
-  const page = lastFocusedPage || document.querySelector('.page');
-  if (!page) return;
-  page.style.columnCount = e.target.value;
-  page.style.columnGap = '24px';
-});
-
-// --- Tab Referensi ---
-document.getElementById('tocBtn').addEventListener('click', () => {
-  const page = lastFocusedPage || document.querySelector('.page');
-  if (!page) return;
-  const headings = Array.from(document.querySelectorAll('.page h1, .page h2, .page h3'));
-  if (headings.length === 0) { alert('Belum ada Heading di dokumen. Pakai gaya Heading 1/2/3 dulu di tab Beranda.'); return; }
-  let html = '<p><b>DAFTAR ISI</b></p><ul>';
-  headings.forEach(h => { html += `<li>${h.textContent}</li>`; });
-  html += '</ul><p><br></p>';
-  page.focus();
-  document.execCommand('insertHTML', false, html);
-});
-document.getElementById('citationBtn').addEventListener('click', () => {
-  withFocusedPage(() => document.execCommand('insertText', false, '[Sumber]'));
-});
-document.getElementById('footnoteBtn').addEventListener('click', () => {
-  const note = prompt('Isi catatan kaki:', '');
-  if (!note) return;
-  withFocusedPage(() => document.execCommand('insertHTML', false, ` <sup>[${note}]</sup>`));
-});
-
-// --- Tab Mailings (fitur lanjutan, belum didukung penuh di versi web ini) ---
-['mailMergeInfoBtn', 'mailMergeInfoBtn2'].forEach(id => {
-  document.getElementById(id).addEventListener('click', () => {
-    alert('Fitur Mail Merge penuh belum tersedia di versi web gratis ini.');
-  });
-});
-
-// --- Sisipkan: Halaman Kosong & Page Break (keduanya = halaman baru terpisah) ---
-document.getElementById('blankPageBtn').addEventListener('click', () => {
-  const pages = getAllPages();
-  const refPage = lastFocusedPage && pages.includes(lastFocusedPage) ? lastFocusedPage : pages[pages.length - 1];
-  const refWrapper = refPage ? refPage.closest('.page-wrapper') : null;
-  const newPage = createPage('<p><br></p>', refWrapper);
-  newPage.focus();
-  newPage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-});
-document.getElementById('pageBreakInsertBtn').addEventListener('click', () => {
-  document.getElementById('blankPageBtn').click();
-});
-
-// --- Sisipkan: Shapes (kotak, oval, panah, bintang, dll) ---
-function shapeHtml(type) {
-  const wrap = (inner, w, h) =>
-    `<span class="shape-block" data-shape="${type}" contenteditable="false" style="display:inline-block;width:${w}px;height:${h}px;vertical-align:middle;margin:4px;touch-action:none;cursor:move;">${inner}</span>`;
-  switch (type) {
-    case 'rect': return wrap(`<div style="width:100%;height:100%;border:2px solid #333;box-sizing:border-box;"></div>`, 110, 70);
-    case 'roundrect': return wrap(`<div style="width:100%;height:100%;border:2px solid #333;border-radius:14px;box-sizing:border-box;"></div>`, 110, 70);
-    case 'oval': return wrap(`<div style="width:100%;height:100%;border:2px solid #333;border-radius:50%;box-sizing:border-box;"></div>`, 90, 90);
-    case 'triangle': return wrap(`<div style="width:0;height:0;border-left:45px solid transparent;border-right:45px solid transparent;border-bottom:78px solid #333;"></div>`, 90, 78);
-    case 'diamond': return wrap(`<div style="width:64px;height:64px;border:2px solid #333;transform:rotate(45deg);margin:16px auto;box-sizing:border-box;"></div>`, 96, 96);
-    case 'arrow-right': return wrap(`<svg viewBox="0 0 100 40" width="100%" height="100%"><line x1="5" y1="20" x2="80" y2="20" stroke="#333" stroke-width="5"/><polygon points="75,7 98,20 75,33" fill="#333"/></svg>`, 100, 40);
-    case 'arrow-left': return wrap(`<svg viewBox="0 0 100 40" width="100%" height="100%"><line x1="20" y1="20" x2="95" y2="20" stroke="#333" stroke-width="5"/><polygon points="25,7 2,20 25,33" fill="#333"/></svg>`, 100, 40);
-    case 'arrow-up': return wrap(`<svg viewBox="0 0 40 100" width="100%" height="100%"><line x1="20" y1="95" x2="20" y2="20" stroke="#333" stroke-width="5"/><polygon points="7,25 20,2 33,25" fill="#333"/></svg>`, 40, 100);
-    case 'arrow-down': return wrap(`<svg viewBox="0 0 40 100" width="100%" height="100%"><line x1="20" y1="5" x2="20" y2="80" stroke="#333" stroke-width="5"/><polygon points="7,75 20,98 33,75" fill="#333"/></svg>`, 40, 100);
-    case 'arrow-double': return wrap(`<svg viewBox="0 0 130 40" width="100%" height="100%"><line x1="20" y1="20" x2="110" y2="20" stroke="#333" stroke-width="5"/><polygon points="25,7 2,20 25,33" fill="#333"/><polygon points="105,7 128,20 105,33" fill="#333"/></svg>`, 130, 40);
-    case 'star': return wrap(`<svg viewBox="0 0 100 100" width="100%" height="100%"><polygon points="50,5 61,38 96,38 68,59 79,92 50,71 21,92 32,59 4,38 39,38" fill="#333"/></svg>`, 90, 90);
-    case 'callout': return wrap(`<div style="width:100%;height:100%;border:2px solid #333;border-radius:10px;box-sizing:border-box;"></div>`, 140, 80);
-    case 'line': return wrap(`<div style="width:100%;height:2px;background:#333;margin-top:19px;"></div>`, 150, 40);
-    case 'pentagon': return wrap(`<div style="width:100%;height:100%;background:#333;clip-path:polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);"></div>`, 90, 86);
-    case 'cross': return wrap(`<div style="position:relative;width:100%;height:100%;"><div style="position:absolute;left:40%;top:0;width:20%;height:100%;background:#333;"></div><div style="position:absolute;top:40%;left:0;width:100%;height:20%;background:#333;"></div></div>`, 90, 90);
-    default: return '';
-  }
-}
-document.getElementById('shapeSelect').addEventListener('change', (e) => {
-  const type = e.target.value;
-  if (!type) return;
-  withFocusedPage(() => document.execCommand('insertHTML', false, shapeHtml(type) + '&nbsp;'));
-  e.target.value = '';
-});
-
-// --- Sisipkan: Text Box ---
-document.getElementById('textBoxBtn').addEventListener('click', () => {
-  withFocusedPage(() => document.execCommand('insertHTML', false, '<span class="textbox" draggable="true" contenteditable="true">Ketik di sini...</span>&nbsp;'));
-});
-
-// --- Sisipkan: Header ---
-document.getElementById('headerBtn').addEventListener('click', () => {
-  const text = prompt('Isi teks header (akan muncul di atas setiap halaman):', '');
-  if (text === null) return;
-  document.querySelectorAll('.page-header-area').forEach(h => { h.textContent = text; });
-  if (document.querySelectorAll('.page-header-area').length === 0) {
-    getAllPages().forEach(p => {
-      const header = document.createElement('div');
-      header.className = 'page-header-area';
-      header.contentEditable = 'true';
-      header.textContent = text;
-      p.insertBefore(header, p.firstChild);
-    });
-  }
-  showToast('Header diterapkan ke semua halaman.');
-});
-
-// --- Sisipkan: Footer toggle (menampilkan/upadate teks footer custom) ---
-document.getElementById('footerToggleBtn').addEventListener('click', () => {
-  const text = prompt('Isi teks footer tambahan (akan muncul di bawah nomor halaman):', '');
-  if (text === null) return;
-  document.querySelectorAll('.page-footer').forEach((f) => {
-    f.dataset.customText = text;
-  });
-  renumberPages();
-  showToast('Footer diterapkan ke semua halaman.');
-});
-
-// --- Sisipkan: Page Number field (nomor halaman langsung di teks kursor) ---
-document.getElementById('pageNumberInsertBtn').addEventListener('click', () => {
-  withFocusedPage((page) => {
-    const wrapper = page.closest('.page-wrapper');
-    const label = wrapper ? wrapper.querySelector('.page-label') : null;
-    const num = label ? label.textContent.replace(/\D/g, '') : '1';
-    document.execCommand('insertText', false, num);
-  });
-});
-
-// --- Sisipkan: Symbol ---
-document.getElementById('symbolSelect').addEventListener('change', (e) => {
-  const sym = e.target.value;
-  if (!sym) return;
-  withFocusedPage(() => document.execCommand('insertText', false, sym));
-  e.target.value = '';
-});
-
-function updateWordCount() {
-  const text = getAllPages().map(p => p.innerText).join(' ').trim();
-  const count = text ? text.split(/\s+/).length : 0;
-  const chars = text.length;
-  wordCount.textContent = `${count} kata · ${chars} karakter`;
-}
-
-document.getElementById('newBtn').addEventListener('click', () => {
-  if (confirm('Buat dokumen baru? Semua halaman saat ini akan dihapus.')) {
-    commitNow();
-    pageWrap.innerHTML = '';
-    createPage('<p>Mulai ketik dokumen kamu di sini...</p>', null);
-    commitNow();
-    statusText.textContent = 'Dokumen Baru';
-    updateWordCount();
-  }
-});
-
-const fileInput = document.getElementById('fileInput');
-document.getElementById('openBtn').addEventListener('click', () => fileInput.click());
-
-fileInput.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const name = file.name.toLowerCase();
-  try {
-    let html;
-    if (name.endsWith('.docx')) {
-      const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.convertToHtml({ arrayBuffer });
-      html = result.value;
-    } else if (name.endsWith('.html') || name.endsWith('.htm')) {
-      html = await file.text();
-    } else {
-      const text = await file.text();
-      html = text.split(/\r?\n/).map(l => `<p>${l || '<br>'}</p>`).join('');
-    }
-    commitNow();
-    pageWrap.innerHTML = '';
-    createPage(html, null);
-    commitNow();
-    statusText.textContent = file.name;
-    addRecentFile(file.name);
-    updateWordCount();
-    showToast('File berhasil dibuka: ' + file.name);
-  } catch (err) {
-    alert('Gagal membuka file: ' + err.message);
-  }
-  fileInput.value = '';
-});
-
-let savedFileHandle = null;
-let autoSaveTimer = null;
-
-// =====================================================================
-// EKSPOR KE .docx ASLI (Office Open XML)
-// Diganti total dari trik "file HTML berkedok .doc" ke file .docx
-// sungguhan memakai docx.js, supaya batas halaman, margin, dan tabel
-// dikenali IDENTIK oleh Microsoft Word maupun Google Docs -- bukan lagi
-// bergantung pada CSS yang bisa diabaikan begitu saja oleh keduanya.
-// =====================================================================
-
-function cmToTwip(cm) { return Math.round(cm * 566.929); }
-function pxToTwip(px) { return Math.round((px / 96) * 1440); }
-
-function rgbToHex(rgbStr) {
-  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgbStr || '');
-  if (!m) return undefined;
-  return [1, 2, 3].map((i) => (+m[i]).toString(16).padStart(2, '0')).join('');
-}
-
-function styleFromNode(node, inherited) {
-  const style = Object.assign({}, inherited);
-  const tag = node.tagName ? node.tagName.toLowerCase() : '';
-  if (tag === 'b' || tag === 'strong') style.bold = true;
-  if (tag === 'i' || tag === 'em') style.italics = true;
-  if (tag === 'u') style.underline = true;
-  if (tag === 's' || tag === 'strike' || tag === 'del') style.strike = true;
-  if (tag === 'sup') style.superScript = true;
-  if (tag === 'sub') style.subScript = true;
-  const st = node.style;
-  if (st) {
-    const fw = st.fontWeight;
-    if (fw === 'bold' || (fw && parseInt(fw, 10) >= 600)) style.bold = true;
-    if (st.fontStyle === 'italic') style.italics = true;
-    if (st.textDecorationLine && st.textDecorationLine.includes('underline')) style.underline = true;
-    if (st.color) { const hex = rgbToHex(st.color); if (hex) style.color = hex; }
-    if (st.fontSize) { const m = /([\d.]+)pt/.exec(st.fontSize); if (m) style.size = Math.round(parseFloat(m[1]) * 2); }
-    if (st.fontFamily) style.font = st.fontFamily.replace(/['"]/g, '').split(',')[0].trim();
-  }
-  return style;
-}
-
-function isSkippableUiNode(node) {
-  return node.classList && (
-    node.classList.contains('col-resize-handle') ||
-    node.classList.contains('img-resize-handle') ||
-    node.classList.contains('table-drag-handle')
-  );
-}
-
-function collectRuns(node, inheritedStyle, runs, pendingImages) {
-  Array.from(node.childNodes).forEach((child) => {
-    if (child.nodeType === 3) {
-      if (child.nodeValue) runs.push(Object.assign({ text: child.nodeValue }, inheritedStyle));
-      return;
-    }
-    if (child.nodeType !== 1) return;
-    if (isSkippableUiNode(child)) return;
-    const tag = child.tagName.toLowerCase();
-    if (tag === 'br') { runs.push({ text: '', isBreak: true }); return; }
-    if (tag === 'img') { pendingImages.push({ img: child }); return; }
-    const childStyle = styleFromNode(child, inheritedStyle);
-    collectRuns(child, childStyle, runs, pendingImages);
-  });
-}
-
-function runsToTextRuns(runs, extra) {
-  extra = extra || {};
-  const out = [];
-  runs.forEach((r) => {
-    if (r.isBreak) { out.push(new docx.TextRun({ text: '', break: 1 })); return; }
-    if (!r.text) return;
-    out.push(new docx.TextRun({
-      text: r.text,
-      bold: r.bold || extra.bold || false,
-      italics: r.italics || false,
-      underline: r.underline ? {} : undefined,
-      strike: r.strike || false,
-      superScript: r.superScript || false,
-      subScript: r.subScript || false,
-      color: r.color,
-      size: r.size || extra.size,
-      font: r.font,
-    }));
-  });
-  return out;
-}
-
-function dataUrlToUint8Array(dataUrl) {
-  const base64 = (dataUrl.split(',')[1] || '').trim();
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-function imageParagraphFromDataUrl(dataUrl, widthPx, heightPx) {
-  const maxW = 600;
-  if (widthPx > maxW) { heightPx = Math.round(heightPx * (maxW / widthPx)); widthPx = maxW; }
-  try {
-    const data = dataUrlToUint8Array(dataUrl);
-    return new docx.Paragraph({
-      children: [new docx.ImageRun({ data, transformation: { width: Math.max(1, Math.round(widthPx)), height: Math.max(1, Math.round(heightPx)) } })],
-    });
-  } catch (err) {
-    return new docx.Paragraph({ children: [new docx.TextRun('[gambar tidak dapat disertakan]')] });
-  }
-}
-
-function imageNodeToDocxParagraph(imgEl) {
-  const src = imgEl.getAttribute('src') || '';
-  const w = imgEl.naturalWidth || imgEl.width || 300;
-  const h = imgEl.naturalHeight || imgEl.height || 200;
-  return imageParagraphFromDataUrl(src, w, h);
-}
-
-// --- Shape (kotak/panah/dll) dirasterisasi jadi gambar PNG lewat <canvas>,
-// karena format .docx asli tidak punya cara langsung menyimpan CSS/SVG
-// mentah seperti trik HTML lama. ---
-function roundRectPath(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-function drawArrowShape(ctx, w, h, dir) {
-  ctx.fillStyle = '#333'; ctx.strokeStyle = '#333'; ctx.lineWidth = Math.max(3, Math.min(w, h) * 0.06);
-  const mid = dir === 'up' || dir === 'down' ? w / 2 : h / 2;
-  ctx.beginPath();
-  if (dir === 'right') { ctx.moveTo(4, mid); ctx.lineTo(w * 0.72, mid); ctx.stroke(); ctx.beginPath(); ctx.moveTo(w * 0.68, mid - h * 0.28); ctx.lineTo(w - 4, mid); ctx.lineTo(w * 0.68, mid + h * 0.28); ctx.closePath(); ctx.fill(); }
-  else if (dir === 'left') { ctx.moveTo(w * 0.28, mid); ctx.lineTo(w - 4, mid); ctx.stroke(); ctx.beginPath(); ctx.moveTo(w * 0.32, mid - h * 0.28); ctx.lineTo(4, mid); ctx.lineTo(w * 0.32, mid + h * 0.28); ctx.closePath(); ctx.fill(); }
-  else if (dir === 'up') { ctx.moveTo(mid, h * 0.28); ctx.lineTo(mid, h - 4); ctx.stroke(); ctx.beginPath(); ctx.moveTo(mid - w * 0.28, h * 0.32); ctx.lineTo(mid, 4); ctx.lineTo(mid + w * 0.28, h * 0.32); ctx.closePath(); ctx.fill(); }
-  else { ctx.moveTo(mid, 4); ctx.lineTo(mid, h * 0.72); ctx.stroke(); ctx.beginPath(); ctx.moveTo(mid - w * 0.28, h * 0.68); ctx.lineTo(mid, h - 4); ctx.lineTo(mid + w * 0.28, h * 0.68); ctx.closePath(); ctx.fill(); }
-}
-function drawStarShape(ctx, w, h) {
-  const cx = w / 2, cy = h / 2, spikes = 5, outerR = Math.min(w, h) / 2 - 2, innerR = outerR * 0.45;
-  let rot = (Math.PI / 2) * 3;
-  const step = Math.PI / spikes;
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - outerR);
-  for (let i = 0; i < spikes; i++) {
-    ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR); rot += step;
-    ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR); rot += step;
-  }
-  ctx.closePath();
-  ctx.fillStyle = '#333';
-  ctx.fill();
-}
-function renderShapeToDataUrl(type, w, h) {
-  const canvas = document.createElement('canvas');
-  canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, w, h);
-  ctx.strokeStyle = '#333';
-  ctx.fillStyle = '#333';
-  ctx.lineWidth = 3;
-  switch (type) {
-    case 'rect': ctx.strokeRect(2, 2, w - 4, h - 4); break;
-    case 'roundrect': roundRectPath(ctx, 2, 2, w - 4, h - 4, 14); ctx.stroke(); break;
-    case 'oval': ctx.beginPath(); ctx.ellipse(w / 2, h / 2, w / 2 - 2, h / 2 - 2, 0, 0, 2 * Math.PI); ctx.stroke(); break;
-    case 'triangle': ctx.beginPath(); ctx.moveTo(w / 2, 2); ctx.lineTo(w - 2, h - 2); ctx.lineTo(2, h - 2); ctx.closePath(); ctx.fill(); break;
-    case 'diamond': ctx.save(); ctx.translate(w / 2, h / 2); ctx.rotate(Math.PI / 4); ctx.strokeRect(-w * 0.28, -h * 0.28, w * 0.56, h * 0.56); ctx.restore(); break;
-    case 'arrow-right': drawArrowShape(ctx, w, h, 'right'); break;
-    case 'arrow-left': drawArrowShape(ctx, w, h, 'left'); break;
-    case 'arrow-up': drawArrowShape(ctx, w, h, 'up'); break;
-    case 'arrow-down': drawArrowShape(ctx, w, h, 'down'); break;
-    case 'arrow-double':
-      ctx.beginPath(); ctx.moveTo(w * 0.22, h / 2); ctx.lineTo(w * 0.78, h / 2); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(w * 0.24, h / 2 - h * 0.28); ctx.lineTo(4, h / 2); ctx.lineTo(w * 0.24, h / 2 + h * 0.28); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(w * 0.76, h / 2 - h * 0.28); ctx.lineTo(w - 4, h / 2); ctx.lineTo(w * 0.76, h / 2 + h * 0.28); ctx.closePath(); ctx.fill();
-      break;
-    case 'star': drawStarShape(ctx, w, h); break;
-    case 'callout': roundRectPath(ctx, 2, 2, w - 4, h - 4, 10); ctx.stroke(); break;
-    case 'line': ctx.beginPath(); ctx.moveTo(2, h / 2); ctx.lineTo(w - 2, h / 2); ctx.lineWidth = 2; ctx.stroke(); break;
-    case 'pentagon':
-      ctx.beginPath();
-      ctx.moveTo(w * 0.5, 0); ctx.lineTo(w, h * 0.38); ctx.lineTo(w * 0.82, h); ctx.lineTo(w * 0.18, h); ctx.lineTo(0, h * 0.38);
-      ctx.closePath(); ctx.fill();
-      break;
-    case 'cross': ctx.fillRect(w * 0.4, 0, w * 0.2, h); ctx.fillRect(0, h * 0.4, w, h * 0.2); break;
-    default: ctx.strokeRect(2, 2, w - 4, h - 4);
-  }
-  return canvas.toDataURL('image/png');
-}
-function shapeNodeToDocxParagraph(shapeEl) {
-  const type = shapeEl.dataset.shape || 'rect';
-  const w = shapeEl.offsetWidth || 100;
-  const h = shapeEl.offsetHeight || 60;
-  const dataUrl = renderShapeToDataUrl(type, w, h);
-  return imageParagraphFromDataUrl(dataUrl, w, h);
-}
-
-// --- Text box -> paragraf dengan bingkai (border), pendekatan paling
-// setara tanpa perlu objek "floating shape" penuh di OOXML. ---
-function textboxNodeToDocxParagraph(el) {
-  const runs = []; const imgs = [];
-  collectRuns(el, {}, runs, imgs);
-  const children = runsToTextRuns(runs);
-  const border = { style: docx.BorderStyle.DASHED, size: 6, color: '888888', space: 4 };
-  return new docx.Paragraph({
-    children: children.length ? children : [new docx.TextRun('')],
-    border: { top: border, bottom: border, left: border, right: border },
-    spacing: { before: 100, after: 100 },
-  });
-}
-
-const ALIGN_MAP = {
-  left: docx.AlignmentType.LEFT,
-  center: docx.AlignmentType.CENTER,
-  right: docx.AlignmentType.RIGHT,
-  justify: docx.AlignmentType.JUSTIFIED,
-};
-
-function tableNodeToDocx(table) {
-  const rows = Array.from(table.rows);
-  const colCount = rows[0] ? rows[0].cells.length : 0;
-  const tableWidthPx = table.offsetWidth || 600;
-  const colWidths = rows[0] ? Array.from(rows[0].cells).map((cell) => cell.offsetWidth || Math.floor(tableWidthPx / colCount)) : [];
-  const totalColWidth = colWidths.reduce((a, b) => a + b, 0) || tableWidthPx || 1;
-
-  // Warna garis tabel: ambil dari style yang sudah diterapkan lewat
-  // toolbar tabel (border-color pada <table> atau tiap sel), jatuh ke abu-abu default.
-  const tableBorderColorRaw = table.style.borderColor || getComputedStyle(table).borderColor;
-  const tableBorderHex = rgbToHex(tableBorderColorRaw) || '999999';
-
-  const tableRows = rows.map((row) => new docx.TableRow({
-    children: Array.from(row.cells).map((cell, ci) => {
-      const runs = []; const imgs = [];
-      collectRuns(cell, {}, runs, imgs);
-      const children = runsToTextRuns(runs);
-      const widthPx = colWidths[ci] || (tableWidthPx / colCount);
-      const widthTwip = pxToTwip((widthPx / totalColWidth) * tableWidthPx);
-      const cellBorderRaw = cell.style.borderColor || tableBorderColorRaw;
-      const cellHex = rgbToHex(cellBorderRaw) || tableBorderHex;
-      const border = { style: docx.BorderStyle.SINGLE, size: 4, color: cellHex };
-      return new docx.TableCell({
-        width: { size: widthTwip, type: docx.WidthType.DXA },
-        children: [new docx.Paragraph({ children: children.length ? children : [new docx.TextRun('')] })],
-        borders: { top: border, bottom: border, left: border, right: border },
-      });
-    }),
-  }));
-  return new docx.Table({ width: { size: pxToTwip(tableWidthPx), type: docx.WidthType.DXA }, rows: tableRows });
-}
-
-async function blockNodeToDocxElements(el) {
-  const elements = [];
-  if (!el.tagName) return elements;
-  const tag = el.tagName.toLowerCase();
-
-  if (el.classList && el.classList.contains('table-wrap')) {
-    const table = el.querySelector('table');
-    if (table) elements.push(tableNodeToDocx(table));
-    return elements;
-  }
-  if (tag === 'table') { elements.push(tableNodeToDocx(el)); return elements; }
-
-  if (el.classList && el.classList.contains('shape-block')) { elements.push(shapeNodeToDocxParagraph(el)); return elements; }
-  if (el.classList && el.classList.contains('textbox')) { elements.push(textboxNodeToDocxParagraph(el)); return elements; }
-  if (tag === 'img') { elements.push(imageNodeToDocxParagraph(el)); return elements; }
-
-  if (tag === 'ul' || tag === 'ol') {
-    Array.from(el.children).filter((c) => c.tagName.toLowerCase() === 'li').forEach((li) => {
-      const runs = []; const imgs = [];
-      collectRuns(li, {}, runs, imgs);
-      const children = runsToTextRuns(runs);
-      elements.push(new docx.Paragraph({
-        children: children.length ? children : [new docx.TextRun('')],
-        bullet: tag === 'ul' ? { level: 0 } : undefined,
-        numbering: tag === 'ol' ? { reference: 'default-numbering', level: 0 } : undefined,
-      }));
-    });
-    return elements;
-  }
-
-  if (tag === 'hr') {
-    elements.push(new docx.Paragraph({ border: { bottom: { color: '999999', space: 1, style: docx.BorderStyle.SINGLE, size: 6 } } }));
-    return elements;
-  }
-
-  if (/^h[1-3]$/.test(tag)) {
-    const runs = []; const imgs = [];
-    collectRuns(el, {}, runs, imgs);
-    const sizeMap = { h1: 48, h2: 36, h3: 28 };
-    const children = runsToTextRuns(runs, { bold: true, size: sizeMap[tag] });
-    const align = ALIGN_MAP[el.style.textAlign] || docx.AlignmentType.LEFT;
-    elements.push(new docx.Paragraph({ children: children.length ? children : [new docx.TextRun('')], alignment: align, spacing: { before: 200, after: 100 } }));
-    imgs.forEach((info) => elements.push(imageNodeToDocxParagraph(info.img)));
-    return elements;
-  }
-
-  // Default: paragraf biasa (p, div header/footer-area, dsb.) — tapi
-  // rekursif dulu ke shape-block/img/table di dalamnya kalau ada, supaya
-  // shape yang disisipkan di tengah kalimat tidak hilang.
-  const directSpecial = Array.from(el.children || []).filter((c) =>
-    (c.classList && (c.classList.contains('shape-block') || c.classList.contains('textbox') || c.classList.contains('table-wrap'))) ||
-    c.tagName.toLowerCase() === 'table'
-  );
-  if (directSpecial.length && el.children.length === directSpecial.length) {
-    for (const child of directSpecial) elements.push(...(await blockNodeToDocxElements(child)));
-    return elements;
-  }
-
-  const runs = []; const imgs = [];
-  collectRuns(el, {}, runs, imgs);
-  const children = runsToTextRuns(runs);
-  const align = ALIGN_MAP[el.style.textAlign] || docx.AlignmentType.LEFT;
-  if (children.length) elements.push(new docx.Paragraph({ children, alignment: align }));
-  else if (!imgs.length) elements.push(new docx.Paragraph({ children: [] }));
-  imgs.forEach((info) => elements.push(imageNodeToDocxParagraph(info.img)));
-  return elements;
-}
-
-document.getElementById('saveBtn').addEventListener('click', async () => {
-  if (typeof docx === 'undefined') {
-    alert('Modul pembuat .docx belum termuat (butuh koneksi internet). Muat ulang halaman ini lalu pastikan internet aktif.');
-    return;
-  }
-  showToast('Menyiapkan file .docx...');
-
-  const paperSizeCm = { A4: { w: 21, h: 29.7 }, Letter: { w: 21.59, h: 27.94 }, Legal: { w: 21.59, h: 35.56 }, F4: { w: 21.5, h: 33 } };
-  const paper = paperSizeCm[document.getElementById('paperSize').value] || paperSizeCm.A4;
-  const marginUnit = document.getElementById('marginUnit').value;
-  const toCm = (v) => { const n = parseFloat(v); if (isNaN(n)) return 2.54; return marginUnit === 'in' ? n * 2.54 : n; };
-  const mTop = toCm(document.getElementById('marginTop').value);
-  const mBottom = toCm(document.getElementById('marginBottom').value);
-  const mLeft = toCm(document.getElementById('marginLeft').value);
-  const mRight = toCm(document.getElementById('marginRight').value);
-
-  const pages = getAllPages();
-  const allChildren = [];
-  for (let pi = 0; pi < pages.length; pi++) {
-    const page = pages[pi];
-    const blocks = Array.from(page.children).filter((c) => !isSkippableUiNode(c) && !c.classList.contains('page-header-area'));
-    for (const block of blocks) {
-      try {
-        const els = await blockNodeToDocxElements(block);
-        allChildren.push(...els);
-      } catch (err) {
-        console.error('Gagal mengonversi elemen ke docx:', block, err);
-      }
-    }
-    if (pi < pages.length - 1) allChildren.push(new docx.Paragraph({ children: [new docx.PageBreak()] }));
-  }
-  if (!allChildren.length) allChildren.push(new docx.Paragraph(''));
-
-  // Header & footer: editor ini memakai teks yang SAMA di semua halaman,
-  // jadi cukup diambil dari halaman pertama dan diterapkan sebagai
-  // header/footer section (akan otomatis berulang di tiap halaman Word/Google Docs).
-  const headerAreaEl = document.querySelector('.page-header-area');
-  const headerText = headerAreaEl ? headerAreaEl.textContent.trim() : '';
-  const footerEl = document.querySelector('.page-footer');
-  const footerCustom = footerEl ? (footerEl.dataset.customText || '') : '';
-
-  const sectionProps = {
-    page: {
-      size: { width: cmToTwip(paper.w), height: cmToTwip(paper.h) },
-      margin: { top: cmToTwip(mTop), bottom: cmToTwip(mBottom), left: cmToTwip(mLeft), right: cmToTwip(mRight) },
-    },
-  };
-  const sectionExtra = {};
-  if (headerText) {
-    sectionExtra.headers = { default: new docx.Header({ children: [new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children: [new docx.TextRun({ text: headerText, size: 20 })] })] }) };
-  }
-  sectionExtra.footers = {
-    default: new docx.Footer({
-      children: [new docx.Paragraph({
-        alignment: docx.AlignmentType.RIGHT,
-        children: [
-          ...(footerCustom ? [new docx.TextRun({ text: footerCustom + ' — ', size: 18 })] : []),
-          new docx.TextRun({ text: 'Halaman ', size: 18 }),
-          new docx.TextRun({ children: [docx.PageNumber.CURRENT], size: 18 }),
-          new docx.TextRun({ text: ' dari ', size: 18 }),
-          new docx.TextRun({ children: [docx.PageNumber.TOTAL_PAGES], size: 18 }),
-        ],
-      })],
-    }),
-  };
-
-  const doc = new docx.Document({
-    styles: { default: { document: { run: { font: 'Calibri', size: 24 } } } },
-    numbering: { config: [{ reference: 'default-numbering', levels: [{ level: 0, format: 'decimal', text: '%1.', alignment: docx.AlignmentType.START }] }] },
-    sections: [{ properties: sectionProps, ...sectionExtra, children: allChildren }],
-  });
-
-  let blob;
-  try {
-    blob = await docx.Packer.toBlob(doc);
-  } catch (err) {
-    console.error(err);
-    alert('Gagal membuat file .docx: ' + err.message);
-    return;
-  }
-
-  if (window.showSaveFilePicker) {
-    try {
-      const handle = await window.showSaveFilePicker({
-        suggestedName: 'Dokumen.docx',
-        types: [{ description: 'Word Document', accept: { 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'] } }],
-      });
-      savedFileHandle = handle;
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      statusText.textContent = handle.name + ' (tersimpan — auto-save aktif)';
-      addRecentFile(handle.name);
-      showToast('Tersimpan! Auto-save aktif ke file ini selama kamu buka halaman ini.');
-      return;
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-    }
-  }
-
-  const filename = (prompt('Nama file? (browser kamu akan menyimpannya ke folder Downloads)', 'Dokumen') || 'Dokumen').replace(/\.docx?$/i, '') + '.docx';
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  statusText.textContent = filename + ' (tersimpan ke Downloads)';
-  addRecentFile(filename);
-  showToast('Tersimpan ke folder Downloads: ' + filename);
-});
-
-async function performAutoSave() {
-  if (!savedFileHandle) return;
-  try {
-    document.getElementById('saveBtn').click();
-  } catch (err) {
-    savedFileHandle = null;
-  }
-}
-
-function scheduleAutoSave() {
-  if (!savedFileHandle) return;
-  clearTimeout(autoSaveTimer);
-  autoSaveTimer = setTimeout(performAutoSave, 3000);
-}
-
-// init
-createPage('<p>Mulai ketik dokumen kamu di sini...</p>', null);
-updateWordCount();
-</script>
+
+    <!-- Modal Tambah Kontak -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2>Tambah Kontak Baru</h2>
+            <p>Masukkan nama dan kode unik untuk kontak ini.</p>
+            <div class="field">
+                <label>Nama Kontak</label>
+                <input type="text" id="newName" placeholder="Misal: Andi" />
+            </div>
+            <div class="field">
+                <label>Kode Unik</label>
+                <div class="code-wrapper">
+                    <input type="text" id="newCode" placeholder="Kode otomatis" readonly />
+                    <button id="generateCodeBtn">Generate</button>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn-cancel" id="modalCancel">Batal</button>
+                <button class="btn-add" id="modalAdd">Tambah Kontak</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Buat Grup -->
+    <div class="modal-overlay" id="groupModal">
+        <div class="modal">
+            <h2>Buat Grup Baru</h2>
+            <p>Pilih anggota dan beri nama grup.</p>
+            <div class="field">
+                <label>Nama Grup</label>
+                <input type="text" id="groupName" placeholder="Nama grup..." />
+            </div>
+            <div class="field">
+                <label>Pilih Anggota</label>
+                <div class="member-list" id="groupMemberList">
+                    <!-- akan diisi oleh JS -->
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn-cancel" id="groupCancel">Batal</button>
+                <button class="btn-add" id="groupCreate">Buat Grup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Pesan Masuk (simulasi dari teman/grup) -->
+    <div class="modal-overlay modal-incoming" id="incomingModal">
+        <div class="modal">
+            <h2>Pesan Masuk</h2>
+            <p>Kirim pesan seolah-olah dari <span id="incomingTarget">kontak</span>.</p>
+            <div class="field">
+                <label>Pengirim</label>
+                <div class="incoming-member-select">
+                    <select id="incomingSenderSelect"></select>
+                </div>
+            </div>
+            <div class="field">
+                <label>Isi Pesan</label>
+                <textarea id="incomingText" placeholder="Ketik pesan..."></textarea>
+            </div>
+            <div class="actions">
+                <button class="btn-cancel" id="incomingCancel">Batal</button>
+                <button class="btn-add" id="incomingSend">Kirim</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ──────────────────────────────────────────────
+        //  DATA & STATE
+        // ──────────────────────────────────────────────
+
+        const messageHistory = {};
+        let contacts = [];
+        let nextId = 1;
+
+        // Data awal: kontak individual
+        const initialContacts = [{
+            id: nextId++,
+            name: 'Aulia',
+            avatar: 'https://ui-avatars.com/api/?name=Aulia&background=7c4dff&color=fff&size=50',
+            online: true,
+            lastMsg: '',
+            time: '',
+            badge: 0,
+            code: 'A1B2C3',
+            type: 'individual'
+        }, {
+            id: nextId++,
+            name: 'Budi Santoso',
+            avatar: 'https://ui-avatars.com/api/?name=Budi+Santoso&background=ff6d00&color=fff&size=50',
+            online: false,
+            lastMsg: '',
+            time: '',
+            badge: 0,
+            code: 'D4E5F6',
+            type: 'individual'
+        }, {
+            id: nextId++,
+            name: 'Citra Dewi',
+            avatar: 'https://ui-avatars.com/api/?name=Citra+Dewi&background=e91e63&color=fff&size=50',
+            online: true,
+            lastMsg: '',
+            time: '',
+            badge: 0,
+            code: 'G7H8I9',
+            type: 'individual'
+        }];
+
+        contacts = initialContacts;
+        contacts.forEach(c => { messageHistory[c.id] = []; });
+
+        let activeContactId = null;
+        let isMobile = window.innerWidth <= 820;
+
+        // Nama pengguna kita
+        const MY_NAME = 'Saya';
+        const MY_ID = 'me'; // tidak digunakan sebagai kontak, hanya untuk label
+
+        // ──────────────────────────────────────────────
+        //  DOM REFS
+        // ──────────────────────────────────────────────
+
+        const contactListEl = document.getElementById('contactList');
+        const chatMessagesEl = document.getElementById('chatMessages');
+        const emptyStateEl = document.getElementById('emptyState');
+        const msgInput = document.getElementById('msgInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const chName = document.getElementById('chName');
+        const chStatus = document.getElementById('chStatus');
+        const chAvatar = document.getElementById('chAvatar');
+        const backBtn = document.getElementById('backBtn');
+        const sidebar = document.getElementById('sidebar');
+        const searchInput = document.getElementById('searchInput');
+        const addContactBtn = document.getElementById('addContactBtn');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalCancel = document.getElementById('modalCancel');
+        const modalAdd = document.getElementById('modalAdd');
+        const newName = document.getElementById('newName');
+        const newCode = document.getElementById('newCode');
+        const generateCodeBtn = document.getElementById('generateCodeBtn');
+        const toastContainer = document.getElementById('toastContainer');
+
+        // Group modal
+        const groupModal = document.getElementById('groupModal');
+        const groupNameInput = document.getElementById('groupName');
+        const groupMemberList = document.getElementById('groupMemberList');
+        const groupCancel = document.getElementById('groupCancel');
+        const groupCreate = document.getElementById('groupCreate');
+        const createGroupBtn = document.getElementById('createGroupBtn');
+
+        // Incoming modal
+        const incomingModal = document.getElementById('incomingModal');
+        const incomingTarget = document.getElementById('incomingTarget');
+        const incomingSenderSelect = document.getElementById('incomingSenderSelect');
+        const incomingText = document.getElementById('incomingText');
+        const incomingCancel = document.getElementById('incomingCancel');
+        const incomingSend = document.getElementById('incomingSend');
+        const incomingBtn = document.getElementById('incomingBtn');
+
+        // ──────────────────────────────────────────────
+        //  HELPERS
+        // ──────────────────────────────────────────────
+
+        function formatTime(d) {
+            const h = String(d.getHours()).padStart(2, '0');
+            const m = String(d.getMinutes()).padStart(2, '0');
+            return h + ':' + m;
+        }
+
+        function getTimeNow() {
+            return formatTime(new Date());
+        }
+
+        function getInitials(name) {
+            const parts = name.trim().split(/\s+/);
+            if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+
+        function getAvatarImg(contact) {
+            if (contact.avatar && contact.avatar.startsWith('http')) {
+                return contact.avatar;
+            }
+            return null;
+        }
+
+        function generateCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        function getContact(id) {
+            return contacts.find(c => c.id === id);
+        }
+
+        function getContactName(id) {
+            const c = getContact(id);
+            return c ? c.name : 'Unknown';
+        }
+
+        function isGroup(id) {
+            const c = getContact(id);
+            return c && c.type === 'group';
+        }
+
+        function getGroupMembers(id) {
+            const c = getContact(id);
+            return c && c.type === 'group' ? c.members || [] : [];
+        }
+
+        // ──────────────────────────────────────────────
+        //  TOAST NOTIFICATION
+        // ──────────────────────────────────────────────
+
+        function showToast(fromName, message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+            <i class="fas fa-comment"></i>
+            <div class="toast-content">
+              <strong>${fromName}</strong>
+              <span>${message}</span>
+            </div>
+            <button class="toast-close">&times;</button>
+          `;
+            toast.querySelector('.toast-close').addEventListener('click', () => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 300);
+            });
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.classList.add('hide');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // ──────────────────────────────────────────────
+        //  RENDER CONTACT LIST
+        // ──────────────────────────────────────────────
+
+        function renderContacts(filter = '') {
+            const q = filter.toLowerCase().trim();
+            let list = contacts;
+            if (q) {
+                list = contacts.filter(c =>
+                    c.name.toLowerCase().includes(q) ||
+                    (c.code && c.code.toLowerCase().includes(q)) ||
+                    (c.type === 'group' && c.members && c.members.some(mid =>
+                        getContactName(mid).toLowerCase().includes(q)
+                    ))
+                );
+            }
+            contactListEl.innerHTML = '';
+            if (list.length === 0) {
+                contactListEl.innerHTML =
+                    `<div style="padding:40px 20px;text-align:center;color:#8696a0;font-size:14px;">Tidak ada kontak atau grup</div>`;
+                return;
+            }
+            list.forEach(c => {
+                const isActive = c.id === activeContactId;
+                const div = document.createElement('div');
+                div.className = `contact-item${isActive ? ' active' : ''}`;
+                div.dataset.id = c.id;
+                let avatarContent;
+                if (c.type === 'group') {
+                    avatarContent = `<span class="group-icon"><i class="fas fa-users"></i></span>`;
+                } else {
+                    const img = getAvatarImg(c);
+                    avatarContent = img ? `<img src="${img}" alt="${c.name}" />` : getInitials(c.name);
+                }
+                const onlineDot = (c.type === 'individual' && c.online) ? '<span class="online-dot"></span>' : '';
+                const badgeHTML = c.badge > 0 ? `<span class="c-badge">${c.badge}</span>` : '';
+                const preview = c.lastMsg || (c.type === 'group' ? 'Grup' : 'Mulai chat');
+                const time = c.time || '';
+                div.innerHTML = `
+              <div class="c-avatar">${avatarContent}</div>
+              <div class="c-info">
+                <div class="c-name">${c.name} ${onlineDot}</div>
+                <div class="c-preview">${preview}</div>
+              </div>
+              <div class="c-meta">
+                <div class="c-time">${time}</div>
+                ${badgeHTML}
+              </div>
+            `;
+                div.addEventListener('click', () => openChat(c.id));
+                contactListEl.appendChild(div);
+            });
+        }
+
+        // ──────────────────────────────────────────────
+        //  RENDER MESSAGES
+        // ──────────────────────────────────────────────
+
+        function renderMessages(contactId) {
+            const msgs = messageHistory[contactId] || [];
+            chatMessagesEl.innerHTML = '';
+            emptyStateEl.style.display = 'none';
+
+            if (msgs.length === 0) {
+                const emptyChat = document.createElement('div');
+                emptyChat.style.cssText =
+                    'flex:1;display:flex;align-items:center;justify-content:center;color:#8696a0;font-size:14px;';
+                emptyChat.textContent = 'Belum ada pesan. Kirim pesan atau tambahkan pesan masuk.';
+                chatMessagesEl.appendChild(emptyChat);
+                return;
+            }
+
+            const divider = document.createElement('div');
+            divider.className = 'date-divider';
+            divider.innerHTML = `<span>Hari ini</span>`;
+            chatMessagesEl.appendChild(divider);
+
+            msgs.forEach((msg) => {
+                const div = document.createElement('div');
+                const isSent = msg.from === 'sent';
+                div.className = `message ${isSent ? 'sent' : 'received'}`;
+
+                let senderLabel = '';
+                if (!isSent && msg.senderName) {
+                    senderLabel = `<div class="msg-sender">${msg.senderName}</div>`;
+                } else if (isSent) {
+                    senderLabel = `<div class="msg-sender">Anda</div>`;
+                }
+
+                const checkIcon = isSent ?
+                    `<span class="check"><i class="fas fa-check-double"></i></span>` :
+                    '';
+
+                div.innerHTML = `
+              ${senderLabel}
+              <div class="msg-text">${msg.text}</div>
+              <div class="msg-time">${msg.time || getTimeNow()} ${checkIcon}</div>
+            `;
+                chatMessagesEl.appendChild(div);
+            });
+
+            chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+        }
+
+        // ──────────────────────────────────────────────
+        //  OPEN CHAT
+        // ──────────────────────────────────────────────
+
+        function openChat(contactId) {
+            const contact = getContact(contactId);
+            if (!contact) return;
+
+            activeContactId = contactId;
+
+            // Update sidebar highlight
+            document.querySelectorAll('.contact-item').forEach(el => {
+                el.classList.toggle('active', parseInt(el.dataset.id) === contactId);
+            });
+
+            // Update header
+            chName.textContent = contact.name;
+            if (contact.type === 'group') {
+                chAvatar.innerHTML = `<span style="font-size:20px;"><i class="fas fa-users"></i></span>`;
+                chStatus.textContent = `Grup • ${contact.members ? contact.members.length : 0} anggota`;
+                chStatus.className = 'ch-status';
+            } else {
+                const avatarImg = getAvatarImg(contact);
+                chAvatar.innerHTML = avatarImg ?
+                    `<img src="${avatarImg}" alt="${contact.name}" />` :
+                    getInitials(contact.name);
+                chStatus.textContent = contact.online ? 'Online' : 'Terakhir dilihat beberapa waktu lalu';
+                chStatus.className = `ch-status${contact.online ? ' online' : ''}`;
+            }
+
+            // Render messages
+            renderMessages(contactId);
+
+            // Enable input
+            msgInput.disabled = false;
+            msgInput.placeholder = 'Ketik pesan...';
+            msgInput.focus();
+            sendBtn.disabled = false;
+
+            // Mobile
+            if (isMobile) {
+                sidebar.classList.add('hidden');
+            }
+
+            // Clear badge
+            contact.badge = 0;
+            renderContacts(searchInput.value);
+        }
+
+        // ──────────────────────────────────────────────
+        //  SEND MESSAGE (dari kita)
+        // ──────────────────────────────────────────────
+
+        function sendMessage() {
+            const text = msgInput.value.trim();
+            if (!text || activeContactId === null) return;
+
+            const contact = getContact(activeContactId);
+            if (!contact) return;
+
+            const newMsg = {
+                from: 'sent',
+                text: text,
+                time: getTimeNow(),
+                senderName: MY_NAME, // untuk grup, tapi kita labeli "Anda"
+            };
+            if (!messageHistory[activeContactId]) {
+                messageHistory[activeContactId] = [];
+            }
+            messageHistory[activeContactId].push(newMsg);
+
+            contact.lastMsg = text;
+            contact.time = getTimeNow();
+
+            renderMessages(activeContactId);
+            renderContacts(searchInput.value);
+
+            msgInput.value = '';
+            sendBtn.disabled = true;
+        }
+
+        // ──────────────────────────────────────────────
+        //  PESAN MASUK (simulasi dari teman / grup)
+        // ──────────────────────────────────────────────
+
+        function openIncomingModal() {
+            if (activeContactId === null) {
+                alert('Pilih kontak atau grup terlebih dahulu.');
+                return;
+            }
+            const contact = getContact(activeContactId);
+            if (!contact) return;
+
+            // Isi target
+            incomingTarget.textContent = contact.name;
+
+            // Isi pilihan pengirim
+            incomingSenderSelect.innerHTML = '';
+            if (contact.type === 'group') {
+                // Untuk grup, kita tampilkan semua anggota (kecuali kita)
+                const members = contact.members || [];
+                members.forEach(mid => {
+                    const m = getContact(mid);
+                    if (m) {
+                        const opt = document.createElement('option');
+                        opt.value = mid;
+                        opt.textContent = m.name;
+                        incomingSenderSelect.appendChild(opt);
+                    }
+                });
+                if (incomingSenderSelect.options.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = 'Tidak ada anggota';
+                    incomingSenderSelect.appendChild(opt);
+                }
+            } else {
+                // Untuk individual, hanya satu pilihan yaitu kontak itu sendiri
+                const opt = document.createElement('option');
+                opt.value = contact.id;
+                opt.textContent = contact.name;
+                incomingSenderSelect.appendChild(opt);
+            }
+
+            incomingText.value = '';
+            incomingModal.classList.add('show');
+            incomingText.focus();
+        }
+
+        function sendIncomingMessage() {
+            const text = incomingText.value.trim();
+            if (!text) {
+                alert('Pesan tidak boleh kosong.');
+                return;
+            }
+            if (activeContactId === null) return;
+            const contact = getContact(activeContactId);
+            if (!contact) return;
+
+            const senderId = parseInt(incomingSenderSelect.value);
+            if (!senderId) {
+                alert('Pilih pengirim terlebih dahulu.');
+                return;
+            }
+            const sender = getContact(senderId);
+            if (!sender) {
+                alert('Pengirim tidak valid.');
+                return;
+            }
+
+            const newMsg = {
+                from: 'received',
+                text: text,
+                time: getTimeNow(),
+                senderName: sender.name,
+                senderId: senderId,
+            };
+            if (!messageHistory[activeContactId]) {
+                messageHistory[activeContactId] = [];
+            }
+            messageHistory[activeContactId].push(newMsg);
+
+            contact.lastMsg = text;
+            contact.time = getTimeNow();
+
+            // Badge jika chat tidak aktif
+            if (activeContactId !== contact.id) {
+                contact.badge = (contact.badge || 0) + 1;
+            }
+
+            renderMessages(activeContactId);
+            renderContacts(searchInput.value);
+
+            // Notifikasi
+            showToast(sender.name, text);
+
+            closeIncomingModal();
+        }
+
+        function closeIncomingModal() {
+            incomingModal.classList.remove('show');
+        }
+
+        // ──────────────────────────────────────────────
+        //  TAMBAH KONTAK
+        // ──────────────────────────────────────────────
+
+        function openModal() {
+            modalOverlay.classList.add('show');
+            newName.value = '';
+            newCode.value = generateCode();
+            newName.focus();
+        }
+
+        function closeModal() {
+            modalOverlay.classList.remove('show');
+        }
+
+        function addContact() {
+            const name = newName.value.trim();
+            let code = newCode.value.trim().toUpperCase();
+            if (!name) {
+                alert('Nama kontak wajib diisi!');
+                return;
+            }
+            if (!code) {
+                code = generateCode();
+            }
+            if (contacts.some(c => c.code === code)) {
+                alert('Kode sudah digunakan, generate ulang atau masukkan kode lain.');
+                return;
+            }
+
+            const newContact = {
+                id: nextId++,
+                name: name,
+                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=50`,
+                online: false,
+                lastMsg: '',
+                time: '',
+                badge: 0,
+                code: code,
+                type: 'individual'
+            };
+            contacts.push(newContact);
+            messageHistory[newContact.id] = [];
+            renderContacts(searchInput.value);
+            closeModal();
+            openChat(newContact.id);
+        }
+
+        // ──────────────────────────────────────────────
+        //  BUAT GRUP
+        // ──────────────────────────────────────────────
+
+        function openGroupModal() {
+            groupModal.classList.add('show');
+            groupNameInput.value = '';
+            // Isi daftar anggota (hanya individual, tidak termasuk grup)
+            groupMemberList.innerHTML = '';
+            const individualContacts = contacts.filter(c => c.type === 'individual');
+            if (individualContacts.length === 0) {
+                groupMemberList.innerHTML = '<div class="text-muted" style="padding:10px;">Tidak ada kontak individual untuk diundang.</div>';
+            } else {
+                individualContacts.forEach(c => {
+                    const label = document.createElement('label');
+                    label.className = 'member-item';
+                    const checked = c.id === contacts[0]?.id ? 'checked' : ''; // default pilih yang pertama
+                    label.innerHTML = `
+                <input type="checkbox" value="${c.id}" ${checked} />
+                <span class="m-avatar">${getAvatarImg(c) ? `<img src="${getAvatarImg(c)}" />` : getInitials(c.name)}</span>
+                <span class="m-name">${c.name}</span>
+              `;
+                    groupMemberList.appendChild(label);
+                });
+            }
+            groupNameInput.focus();
+        }
+
+        function closeGroupModal() {
+            groupModal.classList.remove('show');
+        }
+
+        function createGroup() {
+            const name = groupNameInput.value.trim() || 'Grup Baru';
+            const checkboxes = groupMemberList.querySelectorAll('input[type="checkbox"]:checked');
+            const memberIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            if (memberIds.length < 2) {
+                alert('Pilih minimal 2 anggota untuk membuat grup.');
+                return;
+            }
+
+            // Buat grup baru
+            const newGroup = {
+                id: nextId++,
+                name: name,
+                type: 'group',
+                members: memberIds,
+                lastMsg: '',
+                time: '',
+                badge: 0,
+                code: null, // grup tidak punya kode
+                avatar: null,
+                online: false,
+            };
+            contacts.push(newGroup);
+            messageHistory[newGroup.id] = [];
+            renderContacts(searchInput.value);
+            closeGroupModal();
+            openChat(newGroup.id);
+        }
+
+        // ──────────────────────────────────────────────
+        //  EVENT LISTENERS
+        // ──────────────────────────────────────────────
+
+        sendBtn.addEventListener('click', sendMessage);
+        msgInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        msgInput.addEventListener('input', () => {
+            sendBtn.disabled = msgInput.value.trim().length === 0 || activeContactId === null;
+        });
+
+        backBtn.addEventListener('click', () => {
+            sidebar.classList.remove('hidden');
+            document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
+            activeContactId = null;
+            chName.textContent = 'Pilih kontak';
+            chStatus.textContent = 'Klik untuk memulai chat';
+            chStatus.className = 'ch-status';
+            chAvatar.innerHTML =
+                '<img src="https://ui-avatars.com/api/?name=?&background=2b3943&color=fff&size=40" alt="Contact" />';
+            chatMessagesEl.innerHTML = `
+            <div class="empty-state" id="emptyState">
+              <i class="fab fa-whatsapp"></i>
+              <h2>WhatsApp Web</h2>
+              <p>Pilih kontak atau grup di sebelah kiri untuk mulai mengirim pesan</p>
+            </div>
+          `;
+            msgInput.disabled = true;
+            msgInput.placeholder = 'Pilih kontak terlebih dahulu';
+            sendBtn.disabled = true;
+            msgInput.value = '';
+        });
+
+        searchInput.addEventListener('input', () => {
+            renderContacts(searchInput.value);
+        });
+
+        // Modal tambah kontak
+        addContactBtn.addEventListener('click', openModal);
+        modalCancel.addEventListener('click', closeModal);
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) closeModal();
+        });
+        modalAdd.addEventListener('click', addContact);
+        generateCodeBtn.addEventListener('click', () => {
+            newCode.value = generateCode();
+        });
+        newName.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addContact();
+            }
+        });
+
+        // Modal buat grup
+        createGroupBtn.addEventListener('click', openGroupModal);
+        groupCancel.addEventListener('click', closeGroupModal);
+        groupModal.addEventListener('click', (e) => {
+            if (e.target === groupModal) closeGroupModal();
+        });
+        groupCreate.addEventListener('click', createGroup);
+        groupNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                createGroup();
+            }
+        });
+
+        // Incoming modal
+        incomingBtn.addEventListener('click', openIncomingModal);
+        incomingCancel.addEventListener('click', closeIncomingModal);
+        incomingModal.addEventListener('click', (e) => {
+            if (e.target === incomingModal) closeIncomingModal();
+        });
+        incomingSend.addEventListener('click', sendIncomingMessage);
+        incomingText.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendIncomingMessage();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            isMobile = window.innerWidth <= 820;
+            if (!isMobile) {
+                sidebar.classList.remove('hidden');
+            }
+        });
+
+        // ──────────────────────────────────────────────
+        //  INIT
+        // ──────────────────────────────────────────────
+
+        renderContacts();
+        msgInput.disabled = true;
+        msgInput.placeholder = 'Pilih kontak atau grup';
+        sendBtn.disabled = true;
+
+        console.log('💬 WhatsApp Web — Chat & Grup');
+        console.log('👉 Tambah kontak dengan tombol (+).');
+        console.log('👉 Buat grup dengan tombol users.');
+        console.log('👉 Cari kontak dengan kode di search bar.');
+        console.log('👉 Kirim pesan masuk dari teman/grup pakai tombol amplop.');
+    </script>
 </body>
 </html>
