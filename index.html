@@ -310,6 +310,7 @@
     presenceMap: {},        // code -> ts
     activeChat: null,
     messages: [],
+    draftMessages: {},      // chatId -> teks yang sedang diketik, belum terkirim
     modal: null,
     loginBusy: false,
     loginError: "",
@@ -386,6 +387,7 @@
     if(!name){ state.loginError = "Isi nama tampilan dulu, ya."; render(); return; }
     state.loginBusy = true; render();
     var existing = await storeGet(kUser(code));
+    var isNewAccount = !existing;
     if(existing){
       state.myCode = code;
       state.myName = existing.name;
@@ -399,6 +401,7 @@
     await loadUserData();
     state.loginBusy = false;
     state.screen = "app";
+    if(isNewAccount){ state.modal = "profile"; } // langsung tunjukkan kode ke akun baru biar tidak lupa
     render();
     startPolling();
   }
@@ -434,13 +437,38 @@
     if(state.pollHandle) clearInterval(state.pollHandle);
     state.pollHandle = setInterval(async function(){
       if(state.screen!=="app") return;
+      // heartbeat runs regardless, so we still show up as "online" to contacts
       await storeSet(kPresence(state.myCode), Date.now());
+      if(state.modal) return; // jangan ganggu modal yang sedang dibuka/diisi
       await loadUserData();
+      updateSidebarPartial();
       if(state.activeChat){
+        var oldLen = state.messages.length;
         await refreshMessages();
+        if(state.messages.length !== oldLen){
+          updateMessagesPartial();
+        }
       }
-      render();
     }, POLL_MS);
+  }
+
+  // Memperbarui HANYA daftar chat di sidebar, tanpa menyentuh kotak ketik pesan
+  // di panel utama — ini yang mencegah teks yang sedang diketik hilang tiba-tiba.
+  function updateSidebarPartial(){
+    var oldSidebar = document.querySelector(".sidebar");
+    if(!oldSidebar){ return; }
+    var newSidebar = buildSidebar();
+    oldSidebar.replaceWith(newSidebar);
+  }
+
+  // Memperbarui HANYA isi bubble pesan (dipanggil cuma kalau ada pesan baru),
+  // tanpa membangun ulang elemen input-nya.
+  function updateMessagesPartial(){
+    var box = document.getElementById("messages-box");
+    if(!box || !state.activeChat) return;
+    var nearBottom = (box.scrollHeight - box.scrollTop - box.clientHeight) < 120;
+    box.innerHTML = buildMessagesInnerHTML();
+    if(nearBottom) box.scrollTop = box.scrollHeight;
   }
 
   /* ---------- App shell ---------- */
@@ -460,11 +488,11 @@
     var header = document.createElement("div");
     header.className = "sidebar-header";
     header.innerHTML =
-      '<div class="avatar sm" style="background:'+colorFor(state.myCode)+'" title="'+escapeHtml(state.myName)+'">'+initials(state.myName)+'</div>'+
+      '<div class="avatar sm" id="my-avatar" style="background:'+colorFor(state.myCode)+';cursor:pointer" title="'+escapeHtml(state.myName)+' — Kode: '+escapeHtml(state.myCode)+'">'+initials(state.myName)+'</div>'+
       '<div class="header-icons">'+
         '<button class="icon-btn" id="ic-newchat" title="Tambah kontak">'+ICONS.newchat+'</button>'+
         '<button class="icon-btn" id="ic-group" title="Buat grup">'+ICONS.group+'</button>'+
-        '<button class="icon-btn" id="ic-profile" title="Kode saya">'+ICONS.dots+'</button>'+
+        '<button class="icon-btn" id="ic-profile" title="Profil &amp; kode saya">'+ICONS.dots+'</button>'+
       '</div>';
     el.appendChild(header);
 
@@ -515,6 +543,7 @@
       var nc = document.getElementById("ic-newchat"); if(nc) nc.onclick = function(){ openModal("addContact"); };
       var ng = document.getElementById("ic-group"); if(ng) ng.onclick = function(){ openModal("newGroup"); };
       var pf = document.getElementById("ic-profile"); if(pf) pf.onclick = function(){ openModal("profile"); };
+      var myAv = document.getElementById("my-avatar"); if(myAv) myAv.onclick = function(){ openModal("profile"); };
       var eac = document.getElementById("empty-add-contact"); if(eac) eac.onclick = function(){ openModal("addContact"); };
     },0);
 
@@ -540,6 +569,29 @@
     state.messages = [];
     renderApp();
     refreshMessages().then(renderApp);
+  }
+
+  function buildMessagesInnerHTML(){
+    var html = "";
+    var lastDay = null;
+    state.messages.forEach(function(m){
+      var day = fmtDay(m.ts);
+      if(day !== lastDay){
+        html += '<div class="day-divider">'+escapeHtml(day)+'</div>';
+        lastDay = day;
+      }
+      var isOut = m.from === state.myCode;
+      var senderName = (state.activeChat.type==="group" && !isOut) ? (m.fromName || m.from) : "";
+      html +=
+        '<div class="msg-row '+(isOut?"out":"in")+'">'+
+          '<div class="bubble '+(isOut?"out":"in")+'">'+
+            (senderName ? '<span class="sender-tag">'+escapeHtml(senderName)+'</span>' : '')+
+            '<span class="msg-text">'+escapeHtml(m.text)+'</span>'+
+            '<div class="msg-meta">'+fmtTime(m.ts)+ (isOut? ' '+ICONS.check1 : '')+'</div>'+
+          '</div>'+
+        '</div>';
+    });
+    return html;
   }
 
   async function refreshMessages(){
@@ -596,38 +648,18 @@
       var msgsEl = document.createElement("div");
       msgsEl.className = "messages";
       msgsEl.id = "messages-box";
-      var lastDay = null;
-      state.messages.forEach(function(m){
-        var day = fmtDay(m.ts);
-        if(day !== lastDay){
-          var div = document.createElement("div");
-          div.className = "day-divider";
-          div.textContent = day;
-          msgsEl.appendChild(div);
-          lastDay = day;
-        }
-        var isOut = m.from === state.myCode;
-        var row = document.createElement("div");
-        row.className = "msg-row " + (isOut?"out":"in");
-        var senderName = (state.activeChat.type==="group" && !isOut) ? (m.fromName || m.from) : "";
-        row.innerHTML =
-          '<div class="bubble '+(isOut?"out":"in")+'">'+
-            (senderName ? '<span class="sender-tag">'+escapeHtml(senderName)+'</span>' : '')+
-            '<span class="msg-text">'+escapeHtml(m.text)+'</span>'+
-            '<div class="msg-meta">'+fmtTime(m.ts)+ (isOut? ' '+ICONS.check1 : '')+'</div>'+
-          '</div>';
-        msgsEl.appendChild(row);
-      });
+      msgsEl.innerHTML = buildMessagesInnerHTML();
       el.appendChild(msgsEl);
     }
 
     var inputBar = document.createElement("div");
     inputBar.className = "chat-input-bar";
     var disabled = state.activeChat ? "" : "disabled";
+    var draftVal = (state.activeChat && state.draftMessages[state.activeChat.id]) || "";
     inputBar.innerHTML =
       '<button class="icon-btn" id="btn-emoji" '+disabled+'>'+ICONS.emoji+'</button>'+
       '<button class="icon-btn" id="btn-attach" '+disabled+'>'+ICONS.attach+'</button>'+
-      '<input id="msg-input" type="text" placeholder="'+(state.activeChat?'Ketik pesan':'Pilih kontak atau grup')+'" '+disabled+'/>'+
+      '<input id="msg-input" type="text" placeholder="'+(state.activeChat?'Ketik pesan':'Pilih kontak atau grup')+'" value="'+escapeHtml(draftVal)+'" '+disabled+'/>'+
       '<button class="send-btn" id="btn-send" title="Kirim" '+disabled+'>'+ICONS.send+'</button>';
     el.appendChild(inputBar);
 
@@ -641,17 +673,22 @@
         if(e) e.onclick = function(){ toast("Fitur ini belum tersedia di versi ini."); };
       });
       if(state.activeChat){
+        var chatIdForDraft = state.activeChat.id;
         var input = document.getElementById("msg-input");
         var sendBtn = document.getElementById("btn-send");
+        input.oninput = function(e){ state.draftMessages[chatIdForDraft] = e.target.value; };
         function doSend(){
           var txt = input.value.trim();
           if(!txt) return;
           input.value = "";
+          delete state.draftMessages[chatIdForDraft];
           sendMessage(txt);
         }
         input.onkeydown = function(e){ if(e.key==="Enter") doSend(); };
         sendBtn.onclick = doSend;
+        var caret = input.value.length;
         input.focus();
+        input.setSelectionRange(caret, caret);
       }
     },0);
 
@@ -720,7 +757,7 @@
         '<div class="modal-body" style="text-align:center;">'+
           '<div class="avatar lg" style="margin:0 auto 14px;background:'+colorFor(state.myCode)+'">'+initials(state.myName)+'</div>'+
           '<div style="font-size:17px;font-weight:600;margin-bottom:4px;">'+escapeHtml(state.myName)+'</div>'+
-          '<div class="muted-note" style="margin-bottom:14px;">Ini kode masuk kamu. Bagikan ke orang lain supaya mereka bisa menambahkanmu sebagai kontak.</div>'+
+          '<div class="muted-note" style="margin-bottom:14px;">Kode ini fungsinya seperti nomor telepon di WhatsApp asli — simpan baik-baik, dan bagikan ke orang lain supaya mereka bisa menambahkanmu sebagai kontak.</div>'+
           '<div class="copy-row"><div class="code-generated">'+escapeHtml(state.myCode)+'</div><button class="btn btn-secondary" id="m-copy">Salin</button></div>'+
         '</div>'+
         '<div class="modal-footer"><button class="btn btn-primary" id="m-cancel">Tutup</button></div>';
