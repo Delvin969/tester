@@ -393,6 +393,7 @@
   }
 
   function kUser(code){ return PFX+"user_"+code; }
+  function kUserByEmail(email){ return PFX+"email_"+email; }
   function kContacts(code){ return PFX+"contacts_"+code; }
   function kUserGroups(code){ return PFX+"usergroups_"+code; }
   function kGroup(id){ return PFX+"group_"+id; }
@@ -406,7 +407,14 @@
     for(var i=0;i<len;i++) out += chars[Math.floor(Math.random()*chars.length)];
     return out;
   }
-  function normCode(c){ return (c||"").trim().toUpperCase().replace(/[^A-Z0-9]/g,""); }
+  function randDigits(len){
+    var out = "";
+    for(var i=0;i<len;i++) out += Math.floor(Math.random()*10);
+    return out;
+  }
+  function normCode(c){ return (c||"").trim().replace(/[^0-9]/g,""); }
+  function normEmail(e){ return (e||"").trim().toLowerCase(); }
+  function isValidEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
   function initials(name){
     if(!name) return "?";
     var parts = name.trim().split(/\s+/);
@@ -468,19 +476,23 @@
     '<div class="login-wrap"><div class="login-card">'+
       '<div class="login-logo">'+ICONS.logo+'</div>'+
       '<h1>WhatsApp Web</h1>'+
-      '<p>Masuk pakai kode. Bisa klik "Buatkan Kode" untuk kode acak, atau ketik kode buatanmu sendiri (3&ndash;12 huruf/angka, bebas) di kolom Kode masuk lalu klik Masuk &mdash; kalau kode itu belum pernah dipakai, otomatis jadi kode barumu.</p>'+
+      '<p>Masuk pakai email. Kalau email ini baru, isi juga nama & nomor kamu (nomor boleh atur sendiri, seperti nomor WhatsApp asli). Kalau email ini sudah pernah dipakai, cukup isi email lalu klik Masuk &mdash; nama & nomor lama otomatis dipakai.</p>'+
       '<div class="field">'+
-        '<label>Nama tampilan</label>'+
+        '<label>Email</label>'+
+        '<input id="in-email" type="email" placeholder="nama@email.com" maxlength="80" value="'+escapeHtml(state.tmpEmail||"")+'"/>'+
+      '</div>'+
+      '<div class="field">'+
+        '<label>Nama tampilan <span style="color:#5f7178">(khusus akun baru)</span></label>'+
         '<input id="in-name" type="text" placeholder="Misal: Rani" maxlength="30" value="'+escapeHtml(state.tmpName||"")+'"/>'+
       '</div>'+
       '<div class="field">'+
-        '<label>Kode masuk (boleh atur sendiri)</label>'+
-        '<input id="in-code" type="text" placeholder="Ketik kode sendiri, atau kosongkan lalu klik Buatkan Kode" maxlength="12" style="text-transform:uppercase;letter-spacing:2px" value="'+escapeHtml(state.tmpCode||"")+'"/>'+
+        '<label>Nomor kamu <span style="color:#5f7178">(khusus akun baru, boleh atur sendiri)</span></label>'+
+        '<input id="in-code" type="text" inputmode="numeric" placeholder="Ketik nomor sendiri, atau klik Buatkan Nomor" maxlength="15" style="letter-spacing:1px" value="'+escapeHtml(state.tmpCode||"")+'"/>'+
       '</div>'+
       (state.loginError ? '<div class="err-msg">'+escapeHtml(state.loginError)+'</div>' : '')+
       (state.loginInfo ? '<div class="info-msg">'+escapeHtml(state.loginInfo)+'</div>' : '')+
       '<div class="login-actions">'+
-        '<button class="btn btn-secondary" id="btn-random" '+(state.loginBusy?'disabled':'')+'>Buatkan Kode</button>'+
+        '<button class="btn btn-secondary" id="btn-random" '+(state.loginBusy?'disabled':'')+'>Buatkan Nomor</button>'+
         '<button class="btn btn-primary" id="btn-login" '+(state.loginBusy?'disabled':'')+'>Masuk</button>'+
       '</div>'+
       (state.loginBusy ? '<div class="loading-line">Menghubungkan&hellip;</div>' : '')+
@@ -497,8 +509,10 @@
 
     document.getElementById("btn-random").onclick = onGenerateCode;
     document.getElementById("btn-login").onclick = onLogin;
+    document.getElementById("in-email").oninput = function(e){ state.tmpEmail = e.target.value; };
     document.getElementById("in-name").oninput = function(e){ state.tmpName = e.target.value; };
     document.getElementById("in-code").oninput = function(e){ state.tmpCode = e.target.value; };
+    document.getElementById("in-email").onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
     document.getElementById("in-code").onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
     document.getElementById("in-name").onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
     var createBlobBtn = document.getElementById("btn-create-blob");
@@ -511,46 +525,52 @@
 
   async function onGenerateCode(){
     state.loginError = ""; state.loginInfo = "";
-    var name = (state.tmpName||"").trim();
-    if(!name){ state.loginError = "Isi nama tampilan dulu, ya."; render(); return; }
     state.loginBusy = true; render();
-    var code = randCode(5);
-    var existing = await storeGet(kUser(code));
+    var nomor = "8"+randDigits(8);
+    var existing = await storeGet(kUser(nomor));
     var tries = 0;
-    while(existing && tries<5){ code = randCode(5); existing = await storeGet(kUser(code)); tries++; }
-    var ok = await storeSet(kUser(code), {code:code, name:name, createdAt:Date.now()});
+    while(existing && tries<5){ nomor = "8"+randDigits(8); existing = await storeGet(kUser(nomor)); tries++; }
     state.loginBusy = false;
-    if(!ok){ state.loginError = "Gagal membuat kode. Coba lagi."; render(); return; }
-    state.tmpCode = code;
-    state.loginInfo = "Kode kamu: "+code+" — catat kodenya, lalu tekan Masuk.";
+    state.tmpCode = nomor;
+    state.loginInfo = "Nomor kamu: "+nomor+" — boleh diubah lagi kalau mau, lalu isi email & nama, dan klik Masuk.";
     render();
   }
 
   async function onLogin(){
     state.loginError = ""; state.loginInfo = "";
-    var code = normCode(state.tmpCode);
+    var email = normEmail(state.tmpEmail);
     var name = (state.tmpName||"").trim();
-    if(!code){ state.loginError = "Masukkan kode, atau klik \"Buatkan Kode\"."; render(); return; }
-    if(code.length < 3){ state.loginError = "Kode custom minimal 3 huruf/angka."; render(); return; }
-    if(code.length > 12){ state.loginError = "Kode maksimal 12 karakter."; render(); return; }
-    if(!name){ state.loginError = "Isi nama tampilan dulu, ya."; render(); return; }
+    var nomor = normCode(state.tmpCode);
+    if(!email || !isValidEmail(email)){ state.loginError = "Masukkan email yang valid."; render(); return; }
     state.loginBusy = true; render();
-    var existing = await storeGet(kUser(code));
-    var isNewAccount = !existing;
-    if(existing){
-      state.myCode = code;
-      state.myName = existing.name;
+
+    var emailPtr = await storeGet(kUserByEmail(email));
+    var isNewAccount = false;
+
+    if(emailPtr && emailPtr.nomor){
+      var profile = await storeGet(kUser(emailPtr.nomor));
+      state.myCode = emailPtr.nomor;
+      state.myName = (profile && profile.name) ? profile.name : (name || "Pengguna");
     } else {
-      var ok = await storeSet(kUser(code), {code:code, name:name, createdAt:Date.now()});
-      if(!ok){ state.loginBusy=false; state.loginError="Gagal menyimpan akun. Coba lagi."; render(); return; }
-      state.myCode = code;
+      if(!name){ state.loginBusy=false; state.loginError = "Email ini belum terdaftar — isi nama tampilan dulu untuk bikin akun baru."; render(); return; }
+      if(!nomor){ state.loginBusy=false; state.loginError = "Isi nomor kamu, atau klik \"Buatkan Nomor\"."; render(); return; }
+      if(nomor.length < 5){ state.loginBusy=false; state.loginError = "Nomor minimal 5 digit."; render(); return; }
+      if(nomor.length > 15){ state.loginBusy=false; state.loginError = "Nomor maksimal 15 digit."; render(); return; }
+      var existingNomor = await storeGet(kUser(nomor));
+      if(existingNomor){ state.loginBusy=false; state.loginError = "Nomor ini sudah dipakai orang lain, coba nomor lain atau klik \"Buatkan Nomor\"."; render(); return; }
+      var ok1 = await storeSet(kUser(nomor), {code:nomor, name:name, email:email, createdAt:Date.now()});
+      var ok2 = await storeSet(kUserByEmail(email), {email:email, nomor:nomor});
+      if(!ok1 || !ok2){ state.loginBusy=false; state.loginError="Gagal menyimpan akun. Coba lagi."; render(); return; }
+      state.myCode = nomor;
       state.myName = name;
+      isNewAccount = true;
     }
+
     await storeSet(kPresence(state.myCode), Date.now());
     await loadUserData();
     state.loginBusy = false;
     state.screen = "app";
-    if(isNewAccount){ state.modal = "profile"; } // langsung tunjukkan kode ke akun baru biar tidak lupa
+    if(isNewAccount){ state.modal = "profile"; } // langsung tunjukkan nomor ke akun baru biar tidak lupa
     render();
     startPolling();
   }
@@ -637,17 +657,17 @@
     var header = document.createElement("div");
     header.className = "sidebar-header";
     header.innerHTML =
-      '<div class="avatar sm" id="my-avatar" style="background:'+colorFor(state.myCode)+';cursor:pointer" title="'+escapeHtml(state.myName)+' — Kode: '+escapeHtml(state.myCode)+'">'+initials(state.myName)+'</div>'+
+      '<div class="avatar sm" id="my-avatar" style="background:'+colorFor(state.myCode)+';cursor:pointer" title="'+escapeHtml(state.myName)+' — Nomor: '+escapeHtml(state.myCode)+'">'+initials(state.myName)+'</div>'+
       '<div class="header-icons">'+
         '<button class="icon-btn" id="ic-newchat" title="Tambah kontak">'+ICONS.newchat+'</button>'+
         '<button class="icon-btn" id="ic-group" title="Buat grup">'+ICONS.group+'</button>'+
-        '<button class="icon-btn" id="ic-profile" title="Profil &amp; kode saya">'+ICONS.dots+'</button>'+
+        '<button class="icon-btn" id="ic-profile" title="Profil &amp; nomor saya">'+ICONS.dots+'</button>'+
       '</div>';
     el.appendChild(header);
 
     var search = document.createElement("div");
     search.className = "search-bar";
-    search.innerHTML = '<div class="search-box">'+ICONS.search+'<input id="chat-search" placeholder="Cari nama atau kode..."/>'+ICONS.key+'</div>';
+    search.innerHTML = '<div class="search-box">'+ICONS.search+'<input id="chat-search" placeholder="Cari nama atau nomor..."/>'+ICONS.key+'</div>';
     el.appendChild(search);
 
     var list = document.createElement("div");
@@ -664,7 +684,7 @@
     });
 
     if(items.length === 0){
-      list.innerHTML = '<div class="empty-list">Belum ada obrolan.<br/>Tambahkan kontak pakai kode teman kamu, atau buat grup.<br/><button class="btn btn-primary" id="empty-add-contact">Tambah Kontak</button></div>';
+      list.innerHTML = '<div class="empty-list">Belum ada obrolan.<br/>Tambahkan kontak pakai nomor teman kamu, atau buat grup.<br/><button class="btn btn-primary" id="empty-add-contact">Tambah Kontak</button></div>';
     } else {
       items.forEach(function(it){
         var last = state.lastMsgMap[it.id];
@@ -791,7 +811,7 @@
         ICONS.logo.replace('viewBox="0 0 24 24"','viewBox="0 0 24 24" width="150" height="150"')+
         '<h2>WhatsApp Web</h2>'+
         '<div>Pilih kontak atau grup di sebelah kiri untuk mulai mengirim pesan.</div>'+
-        '<div class="my-code-banner">Kode kamu: <b>'+escapeHtml(state.myCode)+'</b> — bagikan supaya teman bisa menambahkanmu.</div>';
+        '<div class="my-code-banner">Nomor kamu: <b>'+escapeHtml(state.myCode)+'</b> — bagikan supaya teman bisa menambahkanmu.</div>';
       el.appendChild(ph);
     } else {
       var msgsEl = document.createElement("div");
@@ -879,10 +899,10 @@
       modal.innerHTML =
         '<div class="modal-header"><span>Tambah Kontak</span><button id="m-close">'+ICONS.close+'</button></div>'+
         '<div class="modal-body">'+
-          '<div class="field"><label>Kode kontak</label>'+
-            '<input id="add-code" type="text" placeholder="Masukkan kode teman" style="text-transform:uppercase" value="'+escapeHtml(state.pickCode)+'"/></div>'+
+          '<div class="field"><label>Nomor kontak</label>'+
+            '<input id="add-code" type="text" inputmode="numeric" placeholder="Masukkan nomor teman" value="'+escapeHtml(state.pickCode)+'"/></div>'+
           (state.modalError ? '<div class="err-msg">'+escapeHtml(state.modalError)+'</div>' : '')+
-          '<div class="muted-note">Minta kode masuk temanmu, lalu masukkan di sini. Setelah ditambahkan, obrolan langsung muncul untuk kalian berdua.</div>'+
+          '<div class="muted-note">Minta nomor WhatsApp temanmu, lalu masukkan di sini. Setelah ditambahkan, obrolan langsung muncul untuk kalian berdua.</div>'+
         '</div>'+
         '<div class="modal-footer"><button class="btn btn-secondary" id="m-cancel">Batal</button><button class="btn btn-primary" id="m-save">Tambah</button></div>';
     } else if(state.modal === "newGroup"){
@@ -906,7 +926,7 @@
         '<div class="modal-body" style="text-align:center;">'+
           '<div class="avatar lg" style="margin:0 auto 14px;background:'+colorFor(state.myCode)+'">'+initials(state.myName)+'</div>'+
           '<div style="font-size:17px;font-weight:600;margin-bottom:4px;">'+escapeHtml(state.myName)+'</div>'+
-          '<div class="muted-note" style="margin-bottom:14px;">Kode ini fungsinya seperti nomor telepon di WhatsApp asli — simpan baik-baik, dan bagikan ke orang lain supaya mereka bisa menambahkanmu sebagai kontak.</div>'+
+          '<div class="muted-note" style="margin-bottom:14px;">Nomor ini fungsinya seperti nomor telepon di WhatsApp asli — simpan baik-baik, dan bagikan ke orang lain supaya mereka bisa menambahkanmu sebagai kontak. Login berikutnya cukup pakai email kamu.</div>'+
           '<div class="copy-row"><div class="code-generated">'+escapeHtml(state.myCode)+'</div><button class="btn btn-secondary" id="m-copy">Salin</button></div>'+
         '</div>'+
         '<div class="modal-footer"><button class="btn btn-primary" id="m-cancel">Tutup</button></div>';
@@ -948,16 +968,16 @@
 
   async function saveAddContact(){
     var code = normCode(state.pickCode);
-    if(!code){ state.modalError = "Masukkan kode terlebih dulu."; renderApp(); return; }
-    if(code === state.myCode){ state.modalError = "Tidak bisa menambahkan kode sendiri."; renderApp(); return; }
+    if(!code){ state.modalError = "Masukkan nomor terlebih dulu."; renderApp(); return; }
+    if(code === state.myCode){ state.modalError = "Tidak bisa menambahkan nomor sendiri."; renderApp(); return; }
     if(state.contacts.some(function(c){return c.code===code;})){ state.modalError = "Kontak ini sudah ada."; renderApp(); return; }
-    state.modalError = "Mencari kode...";
+    state.modalError = "Mencari nomor...";
     renderApp();
     var target = await storeGet(kUser(code));
     if(!target){
       state.modalError = backend==="local"
-        ? "Kode tidak ditemukan di penyimpanan lokal ini. Di mode lokal, kode hanya dikenali di browser yang sama."
-        : "Kode tidak ditemukan. Pastikan kode benar.";
+        ? "Nomor tidak ditemukan di penyimpanan lokal ini. Di mode lokal, nomor hanya dikenali di browser yang sama."
+        : "Nomor tidak ditemukan. Pastikan nomor benar.";
       renderApp(); return;
     }
 
