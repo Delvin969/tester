@@ -249,7 +249,7 @@
   //   Catatan: penyimpanan ini bersifat publik/terbuka (siapa saja yang tahu
   //   ID-nya bisa baca-tulis) — cocok untuk pemakaian pribadi/demo, bukan data
   //   rahasia.
-  var KV_BUCKET = "9A9fyk9Mx91GBn3C7JMpno";
+  var KV_BUCKET = "";
 
   // ---- ALTERNATIF LEBIH TAHAN LAMA: MODE "firebase" (butuh akun Google, ~5 menit) ----
   //   1. Buka https://console.firebase.google.com -> buat project baru (gratis).
@@ -263,12 +263,12 @@
   //   asal tahu project-nya), ini setara dengan keamanan sistem kode di app ini:
   //   cukup untuk demo/pribadi, bukan untuk data rahasia/sensitif.
   var FIREBASE_CONFIG = {
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
+    apiKey: "AIzaSyA9Y8RJk0l4lMFaVdwbBiFXKt_WKqWNW2c",
+    authDomain: "watcap.firebaseapp.com",
+    projectId: "watcap",
+    storageBucket: "watcap.firebasestorage.app",
+    messagingSenderId: "561144224735",
+    appId: "1:561144224735:web:923788c9efa5947cde826a"
   };
 
   var backend = null; // 'claude' | 'firebase' | 'kv' | 'local'
