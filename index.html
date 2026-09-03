@@ -100,6 +100,9 @@
   .chat-item-name{font-size:15px;font-weight:500;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .chat-item-time{font-size:11.5px;color:var(--text-muted);flex-shrink:0;}
   .chat-item-preview{font-size:13px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chat-item-preview.unread{color:var(--text-main);font-weight:600;}
+  .chat-item-time-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+  .unread-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block;flex-shrink:0;}
 
   .empty-list{padding:40px 24px;text-align:center;color:var(--text-muted);font-size:13.5px;line-height:1.6;}
   .empty-list button{margin-top:14px;}
@@ -179,6 +182,7 @@
   "use strict";
 
   var PFX = "waclone_v2_";
+  var SESSION_KEY = "waclone_v2_session";
   var POLL_MS = 3000;
   var ONLINE_WINDOW_MS = 10000;
 
@@ -193,6 +197,7 @@
     send:'<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
     close:'<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>',
     check1:'<svg viewBox="0 0 18 18" width="14" height="14"><path fill="#8696a0" d="M6.6 12.1 3.5 9l-1 1 4.1 4.1 8-8-1-1z"/></svg>',
+    checkDouble:'<svg viewBox="0 0 16 15" width="16" height="14"><path fill="FILLCOLOR" d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.879a.32.32 0 0 1-.484.033L1.891 7.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"/></svg>',
     mail:'<svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5z"/></svg>',
     video:'<svg viewBox="0 0 24 24"><path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11z"/></svg>',
     phone:'<svg viewBox="0 0 24 24"><path d="M6.62 10.79a15.1 15.1 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.24.2 2.45.57 3.57a1 1 0 0 1-.25 1.02z"/></svg>',
@@ -482,8 +487,55 @@
     loginBusy: false,
     loginError: "",
     loginInfo: "",
-    pollHandle: null
+    pollHandle: null,
+    notifBaselineSet: false,
+    modalBusy: false
   };
+
+  /* ============== CHECK STATUS & NOTIFIKASI ============== */
+  function checkIconFor(m){
+    if(m.read) return ICONS.checkDouble.replace("FILLCOLOR","#53bdeb");
+    if(m.delivered) return ICONS.checkDouble.replace("FILLCOLOR","#8696a0");
+    return ICONS.check1;
+  }
+
+  // Menandai pesan MASUK (bukan dari saya) sebagai delivered, dan kalau markRead=true
+  // (chat sedang dibuka) sekalian sebagai read. Menulis balik ke storage kalau berubah.
+  async function markIncomingDeliveredRead(chatId, arr, markRead){
+    var changed = false;
+    for(var i=0;i<arr.length;i++){
+      var m = arr[i];
+      if(m.from !== state.myCode){
+        if(!m.delivered){ m.delivered = true; changed = true; }
+        if(markRead && !m.read){ m.read = true; changed = true; }
+      }
+    }
+    if(changed){ await storeSet(kChat(chatId), arr); }
+    return changed;
+  }
+
+  function ensureNotifPermission(){
+    try{
+      if(window.Notification && Notification.permission === "default"){
+        Notification.requestPermission();
+      }
+    }catch(e){ /* abaikan kalau browser tidak dukung */ }
+  }
+
+  function notifyNewMessages(list){
+    list.forEach(function(entry){
+      var it = entry.item, msg = entry.msg;
+      var preview = msg.text.length > 60 ? msg.text.slice(0,60)+"…" : msg.text;
+      var who = it.type === "group" ? ((msg.fromName||"Seseorang")+" di "+it.title) : it.title;
+      toast(who + ": " + preview);
+      try{
+        if(window.Notification && Notification.permission === "granted" && document.hidden){
+          var n = new Notification(who, {body:preview});
+          n.onclick = function(){ window.focus(); openChat(it); };
+        }
+      }catch(e){ /* abaikan kalau browser tidak dukung */ }
+    });
+  }
 
   var root = document.getElementById("root");
 
@@ -565,6 +617,13 @@
     render();
   }
 
+  function saveSession(){
+    try{ localStorage.setItem(SESSION_KEY, JSON.stringify({code: state.myCode})); }catch(e){}
+  }
+  function clearSession(){
+    try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+  }
+
   async function onLogin(){
     state.loginError = ""; state.loginInfo = "";
     var email = normEmail(state.tmpEmail);
@@ -597,10 +656,12 @@
 
     await storeSet(kPresence(state.myCode), Date.now());
     await loadUserData();
+    saveSession();
     state.loginBusy = false;
     state.screen = "app";
     if(isNewAccount){ state.modal = "profile"; } // langsung tunjukkan nomor ke akun baru biar tidak lupa
     render();
+    ensureNotifPermission();
     startPolling();
   }
 
@@ -621,14 +682,29 @@
       if(p) pMap[state.contacts[j].code] = p;
     }
     state.presenceMap = pMap;
-    // last message preview per chat item
+    // last message preview per chat item + tandai delivered/read + deteksi pesan baru
     var items = buildChatListItems();
     var lm = {};
+    var newIncoming = [];
+    var baselineExists = state.notifBaselineSet;
     for(var k=0;k<items.length;k++){
       var arr = await storeGet(kChat(items[k].id));
-      if(arr && arr.length){ lm[items[k].id] = arr[arr.length-1]; }
+      if(arr && arr.length){
+        var isOpenChat = !!(state.activeChat && state.activeChat.id === items[k].id);
+        await markIncomingDeliveredRead(items[k].id, arr, isOpenChat);
+        var lastMsg = arr[arr.length-1];
+        if(baselineExists){
+          var prevLastMsg = state.lastMsgMap[items[k].id];
+          if(lastMsg.from !== state.myCode && (!prevLastMsg || prevLastMsg.ts !== lastMsg.ts) && !isOpenChat){
+            newIncoming.push({item: items[k], msg: lastMsg});
+          }
+        }
+        lm[items[k].id] = lastMsg;
+      }
     }
     state.lastMsgMap = lm;
+    state.notifBaselineSet = true;
+    if(newIncoming.length) notifyNewMessages(newIncoming);
   }
 
   function startPolling(){
@@ -719,15 +795,16 @@
         var last = state.lastMsgMap[it.id];
         var preview = last ? ((last.from===state.myCode?"Kamu: ":"")+last.text) : "Mulai chat";
         var isOnline = it.code && state.presenceMap[it.code] && (Date.now()-state.presenceMap[it.code] < ONLINE_WINDOW_MS);
+        var isUnread = !!(last && last.from !== state.myCode && !last.read);
         var row = document.createElement("div");
         row.className = "chat-item" + (state.activeChat && state.activeChat.id===it.id ? " active" : "");
         row.innerHTML =
           '<div class="avatar md" style="background:'+colorFor(it.code||it.groupId)+'">'+initials(it.title)+(isOnline?'<span class="online-dot"></span>':'')+'</div>'+
           '<div class="chat-item-body">'+
             '<div class="chat-item-top"><span class="chat-item-name">'+escapeHtml(it.title)+'</span>'+
-              (last ? '<span class="chat-item-time">'+fmtTime(last.ts)+'</span>' : '')+
+              '<span class="chat-item-time-wrap">'+(isUnread?'<span class="unread-dot"></span>':'')+(last ? '<span class="chat-item-time">'+fmtTime(last.ts)+'</span>' : '')+'</span>'+
             '</div>'+
-            '<div class="chat-item-preview">'+escapeHtml(preview)+'</div>'+
+            '<div class="chat-item-preview'+(isUnread?' unread':'')+'">'+escapeHtml(preview)+'</div>'+
           '</div>';
         row.onclick = function(){ openChat(it); };
         list.appendChild(row);
@@ -785,7 +862,7 @@
           '<div class="bubble '+(isOut?"out":"in")+'">'+
             (senderName ? '<span class="sender-tag">'+escapeHtml(senderName)+'</span>' : '')+
             '<span class="msg-text">'+escapeHtml(m.text)+'</span>'+
-            '<div class="msg-meta">'+fmtTime(m.ts)+ (isOut? ' '+ICONS.check1 : '')+'</div>'+
+            '<div class="msg-meta">'+fmtTime(m.ts)+ (isOut? ' '+checkIconFor(m) : '')+'</div>'+
           '</div>'+
         '</div>';
     });
@@ -794,8 +871,10 @@
 
   async function refreshMessages(){
     if(!state.activeChat) return;
-    var msgs = await storeGet(kChat(state.activeChat.id));
-    state.messages = msgs || [];
+    var arr = (await storeGet(kChat(state.activeChat.id))) || [];
+    await markIncomingDeliveredRead(state.activeChat.id, arr, true);
+    state.messages = arr;
+    if(arr.length) state.lastMsgMap[state.activeChat.id] = arr[arr.length-1];
   }
 
   function buildMain(){
@@ -866,10 +945,20 @@
       if(box) box.scrollTop = box.scrollHeight;
       var back = document.getElementById("btn-back");
       if(back) back.onclick = function(){ state.activeChat = null; renderApp(); };
-      ["hd-mail","hd-video","hd-phone","hd-dots","btn-emoji","btn-attach"].forEach(function(id){
+      ["hd-mail","hd-video","hd-phone","btn-emoji","btn-attach"].forEach(function(id){
         var e = document.getElementById(id);
         if(e) e.onclick = function(){ toast("Fitur ini belum tersedia di versi ini."); };
       });
+      var dotsBtn = document.getElementById("hd-dots");
+      if(dotsBtn) dotsBtn.onclick = function(){
+        if(!state.activeChat){ toast("Fitur ini belum tersedia di versi ini."); return; }
+        var it = state.activeChat;
+        var label = it.type === "group"
+          ? "Keluar dari grup \""+it.title+"\"? Grup akan hilang dari daftar kamu (anggota lain tidak terpengaruh)."
+          : "Hapus obrolan dengan \""+it.title+"\" dari daftar kamu?";
+        if(!confirm(label)) return;
+        removeChatFromMyList(it);
+      };
       if(state.activeChat){
         var chatIdForDraft = state.activeChat.id;
         var input = document.getElementById("msg-input");
@@ -893,9 +982,25 @@
     return el;
   }
 
+  async function removeChatFromMyList(it){
+    if(it.type === "group"){
+      var ug = (await storeGet(kUserGroups(state.myCode))) || [];
+      ug = ug.filter(function(id){ return id !== it.groupId; });
+      await storeSet(kUserGroups(state.myCode), ug);
+    } else {
+      var myContacts = (await storeGet(kContacts(state.myCode))) || [];
+      myContacts = myContacts.filter(function(c){ return c.code !== it.code; });
+      await storeSet(kContacts(state.myCode), myContacts);
+    }
+    if(state.activeChat && state.activeChat.id === it.id){ state.activeChat = null; }
+    await loadUserData();
+    renderApp();
+    toast(it.type === "group" ? "Kamu keluar dari grup." : "Obrolan dihapus dari daftar kamu.");
+  }
+
   async function sendMessage(text){
     var chat = state.activeChat;
-    var msg = {from:state.myCode, fromName:state.myName, text:text, ts:Date.now()};
+    var msg = {from:state.myCode, fromName:state.myName, text:text, ts:Date.now(), delivered:false, read:false};
     state.messages.push(msg);
     renderApp();
     var existing = await storeGet(kChat(chat.id));
@@ -909,12 +1014,13 @@
   function openModal(name){
     state.modal = name;
     state.modalError = "";
+    state.modalBusy = false;
     state.pickCode = "";
     state.groupNameInput = "";
     state.groupPicked = {};
     renderApp();
   }
-  function closeModal(){ state.modal = null; renderApp(); }
+  function closeModal(){ state.modal = null; state.modalBusy = false; renderApp(); }
 
   function buildModal(){
     var overlay = document.createElement("div");
@@ -933,7 +1039,7 @@
           (state.modalError ? '<div class="err-msg">'+escapeHtml(state.modalError)+'</div>' : '')+
           '<div class="muted-note">Minta nomor WhatsApp temanmu, lalu masukkan di sini. Setelah ditambahkan, obrolan langsung muncul untuk kalian berdua.</div>'+
         '</div>'+
-        '<div class="modal-footer"><button class="btn btn-secondary" id="m-cancel">Batal</button><button class="btn btn-primary" id="m-save">Tambah</button></div>';
+        '<div class="modal-footer"><button class="btn btn-secondary" id="m-cancel">Batal</button><button class="btn btn-primary" id="m-save" '+(state.modalBusy?"disabled":"")+'>Tambah</button></div>';
     } else if(state.modal === "newGroup"){
       var rows = state.contacts.map(function(c){
         var checked = state.groupPicked[c.code] ? "checked" : "";
@@ -948,7 +1054,7 @@
           '<label style="font-size:12.5px;color:var(--text-muted);display:block;margin:14px 0 4px;">Pilih anggota</label>'+
           (state.contacts.length ? rows : '<div class="muted-note">Tambahkan kontak dulu sebelum membuat grup.</div>')+
         '</div>'+
-        '<div class="modal-footer"><button class="btn btn-secondary" id="m-cancel">Batal</button><button class="btn btn-primary" id="m-save">Buat Grup</button></div>';
+        '<div class="modal-footer"><button class="btn btn-secondary" id="m-cancel">Batal</button><button class="btn btn-primary" id="m-save" '+(state.modalBusy?"disabled":"")+'>Buat Grup</button></div>';
     } else if(state.modal === "profile"){
       modal.innerHTML =
         '<div class="modal-header"><span>Profil Saya</span><button id="m-close">'+ICONS.close+'</button></div>'+
@@ -958,7 +1064,7 @@
           '<div class="muted-note" style="margin-bottom:14px;">Nomor ini fungsinya seperti nomor telepon di WhatsApp asli — simpan baik-baik, dan bagikan ke orang lain supaya mereka bisa menambahkanmu sebagai kontak. Login berikutnya cukup pakai email kamu.</div>'+
           '<div class="copy-row"><div class="code-generated">'+escapeHtml(state.myCode)+'</div><button class="btn btn-secondary" id="m-copy">Salin</button></div>'+
         '</div>'+
-        '<div class="modal-footer"><button class="btn btn-primary" id="m-cancel">Tutup</button></div>';
+        '<div class="modal-footer"><button class="btn btn-secondary" id="m-logout">Keluar</button><button class="btn btn-primary" id="m-cancel">Tutup</button></div>';
     }
 
     overlay.appendChild(modal);
@@ -989,6 +1095,13 @@
             setTimeout(function(){ copyBtn.textContent = "Salin"; },1500);
           }catch(e){ toast("Tidak bisa menyalin otomatis, salin manual ya."); }
         };
+        var logoutBtn = document.getElementById("m-logout");
+        if(logoutBtn) logoutBtn.onclick = function(){
+          if(!confirm("Keluar dari akun ini? Kamu perlu login lagi nanti.")) return;
+          clearSession();
+          if(state.pollHandle) clearInterval(state.pollHandle);
+          location.reload();
+        };
       }
     },0);
 
@@ -996,14 +1109,17 @@
   }
 
   async function saveAddContact(){
+    if(state.modalBusy) return;
     var code = normCode(state.pickCode);
     if(!code){ state.modalError = "Masukkan nomor terlebih dulu."; renderApp(); return; }
     if(code === state.myCode){ state.modalError = "Tidak bisa menambahkan nomor sendiri."; renderApp(); return; }
     if(state.contacts.some(function(c){return c.code===code;})){ state.modalError = "Kontak ini sudah ada."; renderApp(); return; }
+    state.modalBusy = true;
     state.modalError = "Mencari nomor...";
     renderApp();
     var target = await storeGet(kUser(code));
     if(!target){
+      state.modalBusy = false;
       state.modalError = backend==="local"
         ? "Nomor tidak ditemukan di penyimpanan lokal ini. Di mode lokal, nomor hanya dikenali di browser yang sama."
         : "Nomor tidak ditemukan. Pastikan nomor benar.";
@@ -1026,11 +1142,14 @@
   }
 
   async function saveNewGroup(){
+    if(state.modalBusy) return;
     var name = (state.groupNameInput||"").trim();
     var picked = Object.keys(state.groupPicked).filter(function(c){return state.groupPicked[c];});
     if(!name){ state.modalError = "Beri nama grupnya dulu."; renderApp(); return; }
     if(picked.length < 1){ state.modalError = "Pilih minimal satu anggota."; renderApp(); return; }
+    state.modalBusy = true;
     state.modalError = "";
+    renderApp();
     var id = randCode(8);
     var members = picked.slice();
     members.push(state.myCode);
@@ -1046,10 +1165,31 @@
   }
 
   /* ============== BOOT ============== */
-  render();
-  detectBackend().then(function(){
+  async function tryAutoLogin(){
+    var saved = null;
+    try{ saved = JSON.parse(localStorage.getItem(SESSION_KEY)); }catch(e){}
+    if(saved && saved.code){
+      var profile = await storeGet(kUser(saved.code));
+      if(profile){
+        state.myCode = saved.code;
+        state.myName = profile.name || "Pengguna";
+        await storeSet(kPresence(state.myCode), Date.now());
+        await loadUserData();
+        state.screen = "app";
+        render();
+        ensureNotifPermission();
+        startPolling();
+        return;
+      }
+      clearSession(); // profil sudah tidak ada, sesi lama tidak valid lagi
+    }
     state.screen = "login";
     render();
+  }
+
+  render();
+  detectBackend().then(function(){
+    return tryAutoLogin();
   });
 })();
 </script>
