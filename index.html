@@ -249,7 +249,7 @@
   //   Catatan: penyimpanan ini bersifat publik/terbuka (siapa saja yang tahu
   //   ID-nya bisa baca-tulis) — cocok untuk pemakaian pribadi/demo, bukan data
   //   rahasia.
-  var KV_BUCKET = "EULtSFpNHjFHNZp6Bv7Ne";
+  var KV_BUCKET = "";
 
   // ---- ALTERNATIF LEBIH TAHAN LAMA: MODE "firebase" (butuh akun Google, ~5 menit) ----
   //   1. Buka https://console.firebase.google.com -> buat project baru (gratis).
@@ -304,6 +304,7 @@
   }
 
   var KV_API = "https://kvdb.io";
+  var lastKvError = "";
   async function tryKvBackend(){
     var bucket = (KV_BUCKET||"").trim();
     if(!bucket) return false;
@@ -314,7 +315,10 @@
         body:"1"
       });
       if(res.ok){ backend = "kv"; return true; }
-    }catch(e){ /* fall through */ }
+      lastKvError = "Server membalas status HTTP "+res.status+" (kemungkinan ID bucket \""+bucket+"\" tidak valid/salah ketik).";
+    }catch(e){
+      lastKvError = "Permintaan gagal terkirim sama sekali (\"" + (e && e.message ? e.message : e) + "\") — biasanya diblokir adblocker/ekstensi browser, atau jaringan tempatmu memblokir domain kvdb.io.";
+    }
     return false;
   }
   async function kvGetRaw(key){
@@ -522,9 +526,12 @@
       (backend === "kv" ? '<div class="backend-note" style="color:#3ddc97">Mode penyimpanan bersama aktif: kontak, grup, dan pesan tersimpan online &mdash; bisa dipakai lintas browser dan HP orang lain.</div>' : '')+
       (backend === "local" ? (
         '<div class="backend-note">Mode lokal aktif: kontak, grup, dan pesan hanya tersimpan di browser ini, belum bisa dipakai dari browser/HP lain.</div>'+
-        (state.generatedBlobId
-          ? '<div class="info-msg" style="margin-top:10px;">ID penyimpanan kamu: <b>'+escapeHtml(state.generatedBlobId)+'</b><br/>Salin ID ini, tempel ke variabel <b>KV_BUCKET</b> di bagian atas kode script (di dalam file HTML), simpan, lalu upload ulang ke GitHub Pages. Setelah itu semua orang yang buka link ini berbagi data yang sama.</div>'
-          : '<button class="btn btn-secondary" id="btn-create-blob" style="width:100%;margin-top:10px;">Buat Penyimpanan Bersama (gratis, tanpa akun)</button>'
+        ((KV_BUCKET||"").trim()
+          ? '<div class="err-msg" style="margin-top:10px;">File ini SUDAH punya isi KV_BUCKET ("'+escapeHtml((KV_BUCKET||"").trim())+'"), tapi gagal tersambung. '+escapeHtml(lastKvError||"")+'<br/><br/>Coba: (1) hard refresh halaman ini dengan Ctrl+Shift+R / Cmd+Shift+R untuk pastikan bukan file lama yang ke-cache, (2) cek lagi apakah file yang ter-upload ke GitHub Pages memang file yang sudah kamu edit, (3) matikan adblocker sebentar.</div>'
+          : (state.generatedBlobId
+            ? '<div class="info-msg" style="margin-top:10px;">ID penyimpanan kamu: <b>'+escapeHtml(state.generatedBlobId)+'</b><br/>Salin ID ini, tempel ke variabel <b>KV_BUCKET</b> di bagian atas kode script (di dalam file HTML), simpan, lalu upload ulang ke GitHub Pages. Setelah itu semua orang yang buka link ini berbagi data yang sama.</div>'
+            : '<button class="btn btn-secondary" id="btn-create-blob" style="width:100%;margin-top:10px;">Buat Penyimpanan Bersama (gratis, tanpa akun)</button>'
+          )
         )
       ) : '')+
     '</div></div>';
