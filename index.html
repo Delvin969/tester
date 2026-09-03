@@ -322,20 +322,36 @@
   }
   // Membuat penyimpanan bersama baru (sekali pakai) — tidak butuh akun/login sama sekali.
   async function createSharedBlob(){
+    state.loginError = "";
     try{
+      if(location.protocol === "file:"){
+        state.loginError = "Kamu membuka file ini langsung dari komputer (alamatnya diawali \"file://\"). Browser biasanya MEMBLOKIR permintaan ke internet dari mode ini demi keamanan — ini bukan soal internet kamu. Upload dulu file ini ke GitHub Pages, buka lewat link https://... miliknya, baru klik tombol ini lagi.";
+        renderLogin();
+        return;
+      }
       var res = await fetch(BLOB_API, {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify({})
       });
+      if(!res.ok){
+        state.loginError = "Server penyimpanan bersama menolak permintaan (status "+res.status+"). Coba lagi beberapa saat lagi.";
+        renderLogin();
+        return;
+      }
       var loc = res.headers.get("Location") || res.headers.get("location");
-      if(!loc){ toast("Gagal membuat penyimpanan bersama. Coba lagi."); return; }
+      if(!loc){
+        state.loginError = "Server penyimpanan bersama tidak mengirim ID baliknya. Coba lagi.";
+        renderLogin();
+        return;
+      }
       var parts = loc.split("/");
       var id = parts[parts.length-1];
       state.generatedBlobId = id;
       renderLogin();
     }catch(e){
-      toast("Gagal membuat penyimpanan bersama. Cek koneksi internet.");
+      state.loginError = "Gagal terhubung ke server penyimpanan bersama (jsonblob.com). Pesan teknis: \""+(e && e.message ? e.message : e)+"\". Ini biasanya BUKAN masalah internet kamu — bisa karena diblokir ekstensi/adblocker browser, dibuka lewat file lokal (bukan https), atau server jsonblob.com sedang bermasalah. Coba buka lewat link GitHub Pages, nonaktifkan adblocker sebentar, atau coba lagi nanti.";
+      renderLogin();
     }
   }
 
