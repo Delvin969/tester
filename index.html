@@ -423,6 +423,52 @@
     }catch(e){ return false; }
   }
 
+  // Menambahkan satu item ke array yang tersimpan di `key`, TANPA menghapus
+  // perubahan lain yang mungkin baru saja ditulis pihak lain di saat bersamaan.
+  // Di mode Firebase ini pakai transaction (baca+tulis atomik, otomatis diulang
+  // kalau ada tulisan lain yang menyelip). Di mode lain (kv/local/claude) pakai
+  // cara baca-lalu-tulis biasa — cukup aman untuk pemakaian normal satu perangkat.
+  async function storeArrayAppend(key, item){
+    if(backend === "firebase"){
+      try{
+        var docRef = fbDb.collection("waclone_data").doc(key);
+        await fbDb.runTransaction(async function(tx){
+          var snap = await tx.get(docRef);
+          var current = (snap.exists && snap.data().value) ? JSON.parse(snap.data().value) : [];
+          current.push(item);
+          tx.set(docRef, { value: JSON.stringify(current) });
+        });
+        return true;
+      }catch(e){ return false; }
+    }
+    var arr = (await storeGet(key)) || [];
+    arr.push(item);
+    return await storeSet(key, arr);
+  }
+
+  // Sama seperti storeArrayAppend, tapi tidak menambahkan kalau item serupa
+  // (menurut isDuplicateFn) sudah ada di array itu.
+  async function storeArrayAppendIfAbsent(key, item, isDuplicateFn){
+    if(backend === "firebase"){
+      try{
+        var docRef = fbDb.collection("waclone_data").doc(key);
+        await fbDb.runTransaction(async function(tx){
+          var snap = await tx.get(docRef);
+          var current = (snap.exists && snap.data().value) ? JSON.parse(snap.data().value) : [];
+          if(!current.some(isDuplicateFn)){
+            current.push(item);
+            tx.set(docRef, { value: JSON.stringify(current) });
+          }
+        });
+        return true;
+      }catch(e){ return false; }
+    }
+    var arr = (await storeGet(key)) || [];
+    if(arr.some(isDuplicateFn)) return true;
+    arr.push(item);
+    return await storeSet(key, arr);
+  }
+
   function kUser(code){ return PFX+"user_"+code; }
   function kUserByEmail(email){ return PFX+"email_"+email; }
   function kContacts(code){ return PFX+"contacts_"+code; }
@@ -682,7 +728,9 @@
       if(p) pMap[state.contacts[j].code] = p;
     }
     state.presenceMap = pMap;
-    // last message preview per chat item + tandai delivered/read + deteksi pesan baru
+    // last message preview per chat item (hanya BACA, tidak menulis apapun di sini
+    // — supaya tidak tabrakan dengan pesan baru yang sedang ditulis pihak lain)
+    // + deteksi pesan baru untuk notifikasi
     var items = buildChatListItems();
     var lm = {};
     var newIncoming = [];
@@ -691,7 +739,6 @@
       var arr = await storeGet(kChat(items[k].id));
       if(arr && arr.length){
         var isOpenChat = !!(state.activeChat && state.activeChat.id === items[k].id);
-        await markIncomingDeliveredRead(items[k].id, arr, isOpenChat);
         var lastMsg = arr[arr.length-1];
         if(baselineExists){
           var prevLastMsg = state.lastMsgMap[items[k].id];
@@ -1003,10 +1050,7 @@
     var msg = {from:state.myCode, fromName:state.myName, text:text, ts:Date.now(), delivered:false, read:false};
     state.messages.push(msg);
     renderApp();
-    var existing = await storeGet(kChat(chat.id));
-    var arr = existing || [];
-    arr.push(msg);
-    await storeSet(kChat(chat.id), arr);
+    await storeArrayAppend(kChat(chat.id), msg);
     refreshMessages().then(renderApp);
   }
 
@@ -1126,16 +1170,8 @@
       renderApp(); return;
     }
 
-    var myContacts = (await storeGet(kContacts(state.myCode))) || [];
-    if(!myContacts.some(function(c){return c.code===code;})){
-      myContacts.push({code:code, name:target.name});
-      await storeSet(kContacts(state.myCode), myContacts);
-    }
-    var theirContacts = (await storeGet(kContacts(code))) || [];
-    if(!theirContacts.some(function(c){return c.code===state.myCode;})){
-      theirContacts.push({code:state.myCode, name:state.myName});
-      await storeSet(kContacts(code), theirContacts);
-    }
+    await storeArrayAppendIfAbsent(kContacts(state.myCode), {code:code, name:target.name}, function(c){ return c.code===code; });
+    await storeArrayAppendIfAbsent(kContacts(code), {code:state.myCode, name:state.myName}, function(c){ return c.code===state.myCode; });
 
     await loadUserData();
     closeModal();
@@ -1157,8 +1193,7 @@
     await storeSet(kGroup(id), group);
     for(var i=0;i<members.length;i++){
       var mCode = members[i];
-      var ug = (await storeGet(kUserGroups(mCode))) || [];
-      if(ug.indexOf(id)===-1){ ug.push(id); await storeSet(kUserGroups(mCode), ug); }
+      await storeArrayAppendIfAbsent(kUserGroups(mCode), id, function(existingId){ return existingId === id; });
     }
     await loadUserData();
     closeModal();
