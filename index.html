@@ -218,12 +218,66 @@
   }
 
   /* ============== STORAGE ADAPTER ============== */
-  // Prefers window.storage (available inside Claude.ai artifacts). If that API
-  // is missing or fails (e.g. this file is hosted standalone on GitHub Pages),
-  // it falls back to the browser's localStorage so the app still works —
-  // but then contacts/messages only persist on THIS device/browser, since
-  // there is no shared server to sync across devices in that mode.
-  var backend = null; // 'claude' | 'local'
+  // Ada 3 mode penyimpanan, dicoba berurutan:
+  //   1) "claude"   -> otomatis aktif kalau file ini dibuka DI DALAM Claude.ai.
+  //   2) "firebase" -> aktif kalau kamu isi FIREBASE_CONFIG di bawah ini.
+  //                    Ini yang bikin chat bisa dipakai lintas browser/HP orang lain,
+  //                    karena datanya disimpan di server Firebase (gratis), bukan di
+  //                    satu browser saja.
+  //   3) "local"    -> cadangan terakhir kalau dua di atas tidak tersedia. Data
+  //                    cuma tersimpan di browser ini sendiri (tidak sinkron).
+  //
+  // CARA MENGAKTIFKAN MODE FIREBASE (gratis, ~5 menit, sekali setup):
+  //   1. Buka https://console.firebase.google.com -> buat project baru (gratis).
+  //   2. Di menu kiri: Build -> Firestore Database -> Create database -> pilih
+  //      "Start in test mode" (supaya bisa dibaca/ditulis tanpa login dulu).
+  //   3. Di menu kiri: Project settings (ikon gerigi) -> scroll ke "Your apps" ->
+  //      klik ikon web "</>" -> daftarkan app -> Firebase akan menampilkan objek
+  //      firebaseConfig. Salin nilainya ke FIREBASE_CONFIG di bawah ini.
+  //   4. Simpan file ini lagi, lalu upload ulang ke GitHub Pages.
+  //   Catatan: karena mode test Firestore itu terbuka (siapa saja bisa baca/tulis
+  //   asal tahu project-nya), ini setara dengan keamanan sistem kode di app ini:
+  //   cukup untuk demo/pribadi, bukan untuk data rahasia/sensitif.
+  var FIREBASE_CONFIG = {
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
+  };
+
+  var backend = null; // 'claude' | 'firebase' | 'local'
+  var fbDb = null;
+
+  function loadScriptTag(src){
+    return new Promise(function(resolve, reject){
+      var s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = function(){ reject(new Error("gagal memuat "+src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  async function tryFirebaseBackend(){
+    if(!FIREBASE_CONFIG.apiKey || !FIREBASE_CONFIG.projectId) return false;
+    try{
+      if(!window.firebase){
+        await loadScriptTag("https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js");
+        await loadScriptTag("https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js");
+      }
+      if(!window.firebase.apps || window.firebase.apps.length === 0){
+        window.firebase.initializeApp(FIREBASE_CONFIG);
+      }
+      fbDb = window.firebase.firestore();
+      var probeRef = fbDb.collection("waclone_data").doc(PFX+"__probe__");
+      await probeRef.set({ value: "1" });
+      var snap = await probeRef.get();
+      if(snap.exists){ backend = "firebase"; return true; }
+    }catch(e){ /* fall through */ }
+    return false;
+  }
 
   async function detectBackend(){
     if(window.storage && typeof window.storage.set === "function" && typeof window.storage.get === "function"){
@@ -232,8 +286,10 @@
         await window.storage.set(testKey, "1", true);
         var r = await window.storage.get(testKey, true);
         if(r && r.value === "1"){ backend = "claude"; return; }
-      }catch(e){ /* fall through to local */ }
+      }catch(e){ /* fall through */ }
     }
+    var gotFirebase = await tryFirebaseBackend();
+    if(gotFirebase) return;
     backend = "local";
   }
 
@@ -242,6 +298,11 @@
       if(backend === "claude"){
         var r = await window.storage.get(key, true);
         return r ? JSON.parse(r.value) : null;
+      } else if(backend === "firebase"){
+        var doc = await fbDb.collection("waclone_data").doc(key).get();
+        if(!doc.exists) return null;
+        var data = doc.data();
+        return (data && data.value !== undefined) ? JSON.parse(data.value) : null;
       } else {
         var v = window.localStorage.getItem(key);
         return v ? JSON.parse(v) : null;
@@ -252,6 +313,8 @@
     try{
       if(backend === "claude"){
         await window.storage.set(key, JSON.stringify(val), true);
+      } else if(backend === "firebase"){
+        await fbDb.collection("waclone_data").doc(key).set({ value: JSON.stringify(val) });
       } else {
         window.localStorage.setItem(key, JSON.stringify(val));
       }
@@ -273,7 +336,7 @@
     for(var i=0;i<len;i++) out += chars[Math.floor(Math.random()*chars.length)];
     return out;
   }
-  function normCode(c){ return (c||"").trim().toUpperCase().replace(/\s+/g,""); }
+  function normCode(c){ return (c||"").trim().toUpperCase().replace(/[^A-Z0-9]/g,""); }
   function initials(name){
     if(!name) return "?";
     var parts = name.trim().split(/\s+/);
@@ -335,14 +398,14 @@
     '<div class="login-wrap"><div class="login-card">'+
       '<div class="login-logo">'+ICONS.logo+'</div>'+
       '<h1>WhatsApp Web</h1>'+
-      '<p>Masuk pakai kode. Kode baru dibuatkan otomatis kalau belum pernah dipakai &mdash; kalau kode sudah ada, kamu masuk ke akun yang sama.</p>'+
+      '<p>Masuk pakai kode. Bisa klik "Buatkan Kode" untuk kode acak, atau ketik kode buatanmu sendiri (3&ndash;12 huruf/angka, bebas) di kolom Kode masuk lalu klik Masuk &mdash; kalau kode itu belum pernah dipakai, otomatis jadi kode barumu.</p>'+
       '<div class="field">'+
         '<label>Nama tampilan</label>'+
         '<input id="in-name" type="text" placeholder="Misal: Rani" maxlength="30" value="'+escapeHtml(state.tmpName||"")+'"/>'+
       '</div>'+
       '<div class="field">'+
-        '<label>Kode masuk</label>'+
-        '<input id="in-code" type="text" placeholder="Kosongkan untuk buat kode baru" maxlength="12" style="text-transform:uppercase;letter-spacing:2px" value="'+escapeHtml(state.tmpCode||"")+'"/>'+
+        '<label>Kode masuk (boleh atur sendiri)</label>'+
+        '<input id="in-code" type="text" placeholder="Ketik kode sendiri, atau kosongkan lalu klik Buatkan Kode" maxlength="12" style="text-transform:uppercase;letter-spacing:2px" value="'+escapeHtml(state.tmpCode||"")+'"/>'+
       '</div>'+
       (state.loginError ? '<div class="err-msg">'+escapeHtml(state.loginError)+'</div>' : '')+
       (state.loginInfo ? '<div class="info-msg">'+escapeHtml(state.loginInfo)+'</div>' : '')+
@@ -351,7 +414,8 @@
         '<button class="btn btn-primary" id="btn-login" '+(state.loginBusy?'disabled':'')+'>Masuk</button>'+
       '</div>'+
       (state.loginBusy ? '<div class="loading-line">Menghubungkan&hellip;</div>' : '')+
-      (backend === "local" ? '<div class="backend-note">Mode lokal aktif: kontak, grup, dan pesan hanya tersimpan di browser ini (tidak sinkron ke perangkat lain). Ini biasanya terjadi saat halaman dibuka di luar Claude.ai, misalnya lewat GitHub Pages.</div>' : '')+
+      (backend === "firebase" ? '<div class="backend-note" style="color:#3ddc97">Mode Firebase aktif: kontak, grup, dan pesan tersimpan di server &mdash; bisa dipakai lintas browser dan HP orang lain.</div>' : '')+
+      (backend === "local" ? '<div class="backend-note">Mode lokal aktif: kontak, grup, dan pesan hanya tersimpan di browser ini, belum bisa dipakai dari browser/HP lain. Isi FIREBASE_CONFIG di dalam file (lihat komentar di kode sumber) supaya bisa dipakai lintas perangkat.</div>' : '')+
     '</div></div>';
 
     document.getElementById("btn-random").onclick = onGenerateCode;
@@ -367,10 +431,10 @@
     var name = (state.tmpName||"").trim();
     if(!name){ state.loginError = "Isi nama tampilan dulu, ya."; render(); return; }
     state.loginBusy = true; render();
-    var code = randCode(6);
+    var code = randCode(5);
     var existing = await storeGet(kUser(code));
     var tries = 0;
-    while(existing && tries<5){ code = randCode(6); existing = await storeGet(kUser(code)); tries++; }
+    while(existing && tries<5){ code = randCode(5); existing = await storeGet(kUser(code)); tries++; }
     var ok = await storeSet(kUser(code), {code:code, name:name, createdAt:Date.now()});
     state.loginBusy = false;
     if(!ok){ state.loginError = "Gagal membuat kode. Coba lagi."; render(); return; }
@@ -384,6 +448,8 @@
     var code = normCode(state.tmpCode);
     var name = (state.tmpName||"").trim();
     if(!code){ state.loginError = "Masukkan kode, atau klik \"Buatkan Kode\"."; render(); return; }
+    if(code.length < 3){ state.loginError = "Kode custom minimal 3 huruf/angka."; render(); return; }
+    if(code.length > 12){ state.loginError = "Kode maksimal 12 karakter."; render(); return; }
     if(!name){ state.loginError = "Isi nama tampilan dulu, ya."; render(); return; }
     state.loginBusy = true; render();
     var existing = await storeGet(kUser(code));
