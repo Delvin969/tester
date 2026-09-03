@@ -221,29 +221,35 @@
   // Ada 4 mode penyimpanan, dicoba berurutan:
   //   1) "claude"   -> otomatis aktif kalau file ini dibuka DI DALAM Claude.ai.
   //   2) "firebase" -> aktif kalau kamu isi FIREBASE_CONFIG di bawah ini.
-  //   3) "blob"     -> aktif kalau kamu isi BLOB_ID di bawah ini. Ini cara PALING
-  //                    GAMPANG untuk bikin chat lintas browser/HP TANPA bikin akun
-  //                    sama sekali — lihat langkah-langkahnya di komentar BLOB_ID.
+  //   3) "kv"       -> aktif kalau kamu isi KV_BUCKET di bawah ini. Ini cara
+  //                    PALING GAMPANG untuk bikin chat lintas browser/HP TANPA
+  //                    bikin akun sama sekali — lihat langkah-langkahnya di
+  //                    komentar KV_BUCKET. Pakai layanan kvdb.io yang memang
+  //                    dirancang untuk dipanggil langsung dari browser (beda
+  //                    dari jsonblob.com yang sebelumnya sering gagal karena
+  //                    diblokir CORS).
   //   4) "local"    -> cadangan terakhir. Data cuma tersimpan di browser ini
   //                    sendiri, TIDAK bisa dipakai dari komputer/HP lain.
   //
-  // Kalau kamu coba buka linknya di komputer lain dan kontak/kode "tidak
-  // ditemukan", itu tandanya masih di mode "local" — wajar, karena BLOB_ID
+  // Kalau kamu coba buka linknya di komputer lain dan kontak/nomor "tidak
+  // ditemukan", itu tandanya masih di mode "local" — wajar, karena KV_BUCKET
   // dan FIREBASE_CONFIG di bawah ini masih kosong. Isi salah satu supaya
   // datanya benar-benar dibagikan lewat internet, bukan cuma di satu browser.
   //
-  // ---- CARA PALING GAMPANG: MODE "blob" (tanpa akun, ~1 menit) ----
-  //   1. Buka file ini di browser (double-click, atau lewat link GitHub Pages).
-  //   2. Di halaman login, kalau BLOB_ID masih kosong akan muncul tombol
+  // ---- CARA PALING GAMPANG: MODE "kv" (tanpa akun, ~1 menit) ----
+  //   1. Upload file ini ke GitHub Pages dulu, lalu buka lewat link https://...
+  //      -nya (JANGAN dengan cara double-click file di komputer — browser
+  //      memblokir permintaan internet dari mode file:// itu).
+  //   2. Di halaman login, kalau KV_BUCKET masih kosong akan muncul tombol
   //      "Buat Penyimpanan Bersama". Klik itu.
   //   3. Sebuah ID akan muncul di layar. Salin ID tersebut.
-  //   4. Tempel ID itu ke variabel BLOB_ID di bawah ini (di antara tanda kutip).
+  //   4. Tempel ID itu ke variabel KV_BUCKET di bawah ini (di antara tanda kutip).
   //   5. Simpan file, upload ulang ke GitHub Pages. Selesai — sekarang siapa
   //      saja yang buka link itu, dari komputer/HP manapun, berbagi data yang sama.
   //   Catatan: penyimpanan ini bersifat publik/terbuka (siapa saja yang tahu
   //   ID-nya bisa baca-tulis) — cocok untuk pemakaian pribadi/demo, bukan data
   //   rahasia.
-  var BLOB_ID = "";
+  var KV_BUCKET = "";
 
   // ---- ALTERNATIF LEBIH TAHAN LAMA: MODE "firebase" (butuh akun Google, ~5 menit) ----
   //   1. Buka https://console.firebase.google.com -> buat project baru (gratis).
@@ -265,7 +271,7 @@
     appId: ""
   };
 
-  var backend = null; // 'claude' | 'firebase' | 'blob' | 'local'
+  var backend = null; // 'claude' | 'firebase' | 'kv' | 'local'
   var fbDb = null;
 
   function loadScriptTag(src){
@@ -297,31 +303,36 @@
     return false;
   }
 
-  var BLOB_API = "https://jsonblob.com/api/jsonBlob";
-  async function tryBlobBackend(){
-    var id = (BLOB_ID||"").trim();
-    if(!id) return false;
+  var KV_API = "https://kvdb.io";
+  async function tryKvBackend(){
+    var bucket = (KV_BUCKET||"").trim();
+    if(!bucket) return false;
     try{
-      var res = await fetch(BLOB_API+"/"+id);
-      if(res.ok){ backend = "blob"; return true; }
+      var res = await fetch(KV_API+"/"+bucket+"/__probe__", {
+        method:"PUT",
+        headers:{"Content-Type":"text/plain"},
+        body:"1"
+      });
+      if(res.ok){ backend = "kv"; return true; }
     }catch(e){ /* fall through */ }
     return false;
   }
-  async function blobFetchAll(){
-    var res = await fetch(BLOB_API+"/"+(BLOB_ID||"").trim());
-    if(!res.ok) throw new Error("blob fetch failed");
-    return await res.json();
+  async function kvGetRaw(key){
+    var res = await fetch(KV_API+"/"+(KV_BUCKET||"").trim()+"/"+encodeURIComponent(key));
+    if(res.status === 404) return null;
+    if(!res.ok) throw new Error("kv get gagal (status "+res.status+")");
+    return await res.text();
   }
-  async function blobPutAll(obj){
-    var res = await fetch(BLOB_API+"/"+(BLOB_ID||"").trim(), {
+  async function kvSetRaw(key, text){
+    var res = await fetch(KV_API+"/"+(KV_BUCKET||"").trim()+"/"+encodeURIComponent(key), {
       method:"PUT",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify(obj)
+      headers:{"Content-Type":"text/plain"},
+      body: text
     });
-    if(!res.ok) throw new Error("blob put failed");
+    if(!res.ok) throw new Error("kv set gagal (status "+res.status+")");
   }
-  // Membuat penyimpanan bersama baru (sekali pakai) — tidak butuh akun/login sama sekali.
-  async function createSharedBlob(){
+  // Membuat penyimpanan bersama baru (bucket kvdb.io) — tidak butuh akun/login sama sekali.
+  async function createSharedBucket(){
     state.loginError = "";
     try{
       if(location.protocol === "file:"){
@@ -329,28 +340,26 @@
         renderLogin();
         return;
       }
-      var res = await fetch(BLOB_API, {
+      var res = await fetch(KV_API+"/", {
         method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({})
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:"email=whatswebclone@example.com"
       });
       if(!res.ok){
         state.loginError = "Server penyimpanan bersama menolak permintaan (status "+res.status+"). Coba lagi beberapa saat lagi.";
         renderLogin();
         return;
       }
-      var loc = res.headers.get("Location") || res.headers.get("location");
-      if(!loc){
+      var id = (await res.text()).trim();
+      if(!id){
         state.loginError = "Server penyimpanan bersama tidak mengirim ID baliknya. Coba lagi.";
         renderLogin();
         return;
       }
-      var parts = loc.split("/");
-      var id = parts[parts.length-1];
       state.generatedBlobId = id;
       renderLogin();
     }catch(e){
-      state.loginError = "Gagal terhubung ke server penyimpanan bersama (jsonblob.com). Pesan teknis: \""+(e && e.message ? e.message : e)+"\". Ini biasanya BUKAN masalah internet kamu — bisa karena diblokir ekstensi/adblocker browser, dibuka lewat file lokal (bukan https), atau server jsonblob.com sedang bermasalah. Coba buka lewat link GitHub Pages, nonaktifkan adblocker sebentar, atau coba lagi nanti.";
+      state.loginError = "Gagal terhubung ke server penyimpanan bersama (kvdb.io). Pesan teknis: \""+(e && e.message ? e.message : e)+"\". Ini biasanya BUKAN masalah internet kamu — bisa karena diblokir ekstensi/adblocker browser, dibuka lewat file lokal (bukan https), atau server kvdb.io sedang bermasalah. Coba buka lewat link GitHub Pages, nonaktifkan adblocker sebentar, atau coba lagi nanti.";
       renderLogin();
     }
   }
@@ -366,8 +375,8 @@
     }
     var gotFirebase = await tryFirebaseBackend();
     if(gotFirebase) return;
-    var gotBlob = await tryBlobBackend();
-    if(gotBlob) return;
+    var gotKv = await tryKvBackend();
+    if(gotKv) return;
     backend = "local";
   }
 
@@ -381,9 +390,9 @@
         if(!doc.exists) return null;
         var data = doc.data();
         return (data && data.value !== undefined) ? JSON.parse(data.value) : null;
-      } else if(backend === "blob"){
-        var all = await blobFetchAll();
-        return (all && all[key] !== undefined) ? JSON.parse(all[key]) : null;
+      } else if(backend === "kv"){
+        var raw = await kvGetRaw(key);
+        return raw !== null ? JSON.parse(raw) : null;
       } else {
         var v = window.localStorage.getItem(key);
         return v ? JSON.parse(v) : null;
@@ -396,11 +405,8 @@
         await window.storage.set(key, JSON.stringify(val), true);
       } else if(backend === "firebase"){
         await fbDb.collection("waclone_data").doc(key).set({ value: JSON.stringify(val) });
-      } else if(backend === "blob"){
-        var allData;
-        try{ allData = await blobFetchAll(); }catch(e2){ allData = {}; }
-        allData[key] = JSON.stringify(val);
-        await blobPutAll(allData);
+      } else if(backend === "kv"){
+        await kvSetRaw(key, JSON.stringify(val));
       } else {
         window.localStorage.setItem(key, JSON.stringify(val));
       }
@@ -513,11 +519,11 @@
       '</div>'+
       (state.loginBusy ? '<div class="loading-line">Menghubungkan&hellip;</div>' : '')+
       (backend === "firebase" ? '<div class="backend-note" style="color:#3ddc97">Mode Firebase aktif: kontak, grup, dan pesan tersimpan di server &mdash; bisa dipakai lintas browser dan HP orang lain.</div>' : '')+
-      (backend === "blob" ? '<div class="backend-note" style="color:#3ddc97">Mode penyimpanan bersama aktif: kontak, grup, dan pesan tersimpan online &mdash; bisa dipakai lintas browser dan HP orang lain.</div>' : '')+
+      (backend === "kv" ? '<div class="backend-note" style="color:#3ddc97">Mode penyimpanan bersama aktif: kontak, grup, dan pesan tersimpan online &mdash; bisa dipakai lintas browser dan HP orang lain.</div>' : '')+
       (backend === "local" ? (
         '<div class="backend-note">Mode lokal aktif: kontak, grup, dan pesan hanya tersimpan di browser ini, belum bisa dipakai dari browser/HP lain.</div>'+
         (state.generatedBlobId
-          ? '<div class="info-msg" style="margin-top:10px;">ID penyimpanan kamu: <b>'+escapeHtml(state.generatedBlobId)+'</b><br/>Salin ID ini, tempel ke variabel <b>BLOB_ID</b> di bagian atas kode script (di dalam file HTML), simpan, lalu upload ulang ke GitHub Pages. Setelah itu semua orang yang buka link ini berbagi data yang sama.</div>'
+          ? '<div class="info-msg" style="margin-top:10px;">ID penyimpanan kamu: <b>'+escapeHtml(state.generatedBlobId)+'</b><br/>Salin ID ini, tempel ke variabel <b>KV_BUCKET</b> di bagian atas kode script (di dalam file HTML), simpan, lalu upload ulang ke GitHub Pages. Setelah itu semua orang yang buka link ini berbagi data yang sama.</div>'
           : '<button class="btn btn-secondary" id="btn-create-blob" style="width:100%;margin-top:10px;">Buat Penyimpanan Bersama (gratis, tanpa akun)</button>'
         )
       ) : '')+
@@ -535,7 +541,7 @@
     if(createBlobBtn) createBlobBtn.onclick = function(){
       createBlobBtn.disabled = true;
       createBlobBtn.textContent = "Membuat...";
-      createSharedBlob();
+      createSharedBucket();
     };
   }
 
