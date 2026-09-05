@@ -889,8 +889,9 @@
     render();
   }
 
+  // MODIFIKASI: saveSession tidak menyimpan apa pun
   function saveSession(){
-    try{ localStorage.setItem(SESSION_KEY, JSON.stringify({code: state.myCode})); }catch(e){}
+    // tidak menyimpan sesi otomatis lagi
   }
   function clearSession(){
     try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
@@ -928,7 +929,7 @@
 
     await storeSet(kPresence(state.myCode), Date.now());
     await loadUserData();
-    saveSession();
+    saveSession(); // tidak melakukan apa-apa
     state.loginBusy = false;
     state.screen = "app";
     if(isNewAccount){ state.modal = "profile"; }
@@ -2047,24 +2048,9 @@
   }
 
   /* ============== BOOT ============== */
+  // MODIFIKASI: tryAutoLogin langsung ke login, tanpa memeriksa sesi
   async function tryAutoLogin(){
-    var saved = null;
-    try{ saved = JSON.parse(localStorage.getItem(SESSION_KEY)); }catch(e){}
-    if(saved && saved.code){
-      var profile = await storeGet(kUser(saved.code));
-      if(profile){
-        state.myCode = saved.code;
-        state.myName = profile.name || "Pengguna";
-        await storeSet(kPresence(state.myCode), Date.now());
-        await loadUserData();
-        state.screen = "app";
-        render();
-        ensureNotifPermission();
-        startPolling();
-        return;
-      }
-      clearSession();
-    }
+    // Selalu minta login ulang, tidak auto-login
     state.screen = "login";
     render();
   }
