@@ -129,8 +129,23 @@
   .bubble.out{background:var(--bubble-out);border-top-right-radius:0;}
   .bubble .sender-tag{font-size:12.5px;font-weight:600;color:#6bd6c5;margin-bottom:2px;display:block;}
   .bubble .msg-text{white-space:pre-wrap;word-break:break-word;color:var(--text-main);}
+  .bubble.bubble-file{padding:6px;}
+  .file-image{max-width:240px;max-height:280px;border-radius:6px;display:block;cursor:pointer;}
+  .file-chip{display:flex;align-items:center;gap:8px;background:#ffffff10;padding:9px 11px;border-radius:8px;text-decoration:none;color:var(--text-main);min-width:160px;}
+  .file-chip:hover{background:#ffffff1c;}
+  .file-chip-icon{width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .file-chip-icon svg{width:18px;height:18px;fill:#062b23;}
+  .file-chip-name{font-size:13.5px;word-break:break-word;}
   .bubble .msg-meta{display:flex;justify-content:flex-end;gap:4px;margin-top:2px;font-size:10.5px;color:#8696a0;align-items:center;}
   .day-divider{align-self:center;background:#182229;color:#8fa3ad;font-size:12px;padding:5px 12px;border-radius:8px;margin:10px 0;}
+  .msg-image{max-width:260px;max-height:320px;border-radius:6px;display:block;cursor:pointer;margin-bottom:2px;}
+  .msg-file-card{display:flex;align-items:center;gap:10px;background:#0b141a55;border-radius:6px;padding:8px 10px;margin-bottom:2px;min-width:180px;}
+  .msg-file-card .file-ic{width:34px;height:34px;border-radius:6px;background:#00a88433;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .msg-file-card .file-ic svg{width:18px;height:18px;fill:var(--accent);}
+  .msg-file-card .file-info{min-width:0;flex:1;}
+  .msg-file-card .file-name{font-size:13.5px;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;}
+  .msg-file-card .file-size{font-size:11.5px;color:var(--text-muted);}
+  .msg-file-card a{color:var(--accent);font-size:12.5px;font-weight:600;text-decoration:none;flex-shrink:0;}
 
   .chat-input-bar{background:var(--bg-header);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
   .chat-input-bar input{flex:1;border:none;border-radius:20px;padding:11px 16px;font-size:14.5px;outline:none;background:var(--bg-input);color:var(--text-main);}
@@ -423,12 +438,16 @@
     }catch(e){ return false; }
   }
 
+  function sleep(ms){ return new Promise(function(res){ setTimeout(res, ms); }); }
+
   // Menambahkan satu item ke array yang tersimpan di `key`, TANPA menghapus
   // perubahan lain yang mungkin baru saja ditulis pihak lain di saat bersamaan.
   // Di mode Firebase ini pakai transaction (baca+tulis atomik, otomatis diulang
   // kalau ada tulisan lain yang menyelip). Di mode lain (kv/local/claude) pakai
   // cara baca-lalu-tulis biasa — cukup aman untuk pemakaian normal satu perangkat.
-  async function storeArrayAppend(key, item){
+  // Kalau percobaan pertama gagal (misal jaringan sempat putus), dicoba ulang
+  // sekali lagi otomatis sebelum benar-benar dianggap gagal.
+  async function storeArrayAppendOnce(key, item){
     if(backend === "firebase"){
       try{
         var docRef = fbDb.collection("waclone_data").doc(key);
@@ -445,10 +464,15 @@
     arr.push(item);
     return await storeSet(key, arr);
   }
+  async function storeArrayAppend(key, item){
+    var ok = await storeArrayAppendOnce(key, item);
+    if(!ok){ await sleep(900); ok = await storeArrayAppendOnce(key, item); }
+    return ok;
+  }
 
   // Sama seperti storeArrayAppend, tapi tidak menambahkan kalau item serupa
   // (menurut isDuplicateFn) sudah ada di array itu.
-  async function storeArrayAppendIfAbsent(key, item, isDuplicateFn){
+  async function storeArrayAppendIfAbsentOnce(key, item, isDuplicateFn){
     if(backend === "firebase"){
       try{
         var docRef = fbDb.collection("waclone_data").doc(key);
@@ -467,6 +491,40 @@
     if(arr.some(isDuplicateFn)) return true;
     arr.push(item);
     return await storeSet(key, arr);
+  }
+  async function storeArrayAppendIfAbsent(key, item, isDuplicateFn){
+    var ok = await storeArrayAppendIfAbsentOnce(key, item, isDuplicateFn);
+    if(!ok){ await sleep(900); ok = await storeArrayAppendIfAbsentOnce(key, item, isDuplicateFn); }
+    return ok;
+  }
+
+  // Mengubah isi array yang tersimpan di `key` lewat mutatorFn (mengubah elemen
+  // yang sudah ada, bukan menambah elemen baru) — mutatorFn menerima array
+  // TERBARU dan harus me-return true kalau ada perubahan. Di mode Firebase ini
+  // juga pakai transaction, supaya tidak menimpa pesan baru yang mungkin baru
+  // saja ditambahkan pihak lain tepat di saat yang sama.
+  async function storeArrayMutateOnce(key, mutatorFn){
+    if(backend === "firebase"){
+      try{
+        var docRef = fbDb.collection("waclone_data").doc(key);
+        await fbDb.runTransaction(async function(tx){
+          var snap = await tx.get(docRef);
+          var current = (snap.exists && snap.data().value) ? JSON.parse(snap.data().value) : [];
+          var changed = mutatorFn(current);
+          if(changed){ tx.set(docRef, { value: JSON.stringify(current) }); }
+        });
+        return true;
+      }catch(e){ return false; }
+    }
+    var arr = (await storeGet(key)) || [];
+    var changed = mutatorFn(arr);
+    if(changed){ return await storeSet(key, arr); }
+    return true;
+  }
+  async function storeArrayMutate(key, mutatorFn){
+    var ok = await storeArrayMutateOnce(key, mutatorFn);
+    if(!ok){ await sleep(900); ok = await storeArrayMutateOnce(key, mutatorFn); }
+    return ok;
   }
 
   function kUser(code){ return PFX+"user_"+code; }
@@ -547,17 +605,19 @@
 
   // Menandai pesan MASUK (bukan dari saya) sebagai delivered, dan kalau markRead=true
   // (chat sedang dibuka) sekalian sebagai read. Menulis balik ke storage kalau berubah.
-  async function markIncomingDeliveredRead(chatId, arr, markRead){
-    var changed = false;
-    for(var i=0;i<arr.length;i++){
-      var m = arr[i];
-      if(m.from !== state.myCode){
-        if(!m.delivered){ m.delivered = true; changed = true; }
-        if(markRead && !m.read){ m.read = true; changed = true; }
+  async function markIncomingDeliveredRead(chatId, markRead){
+    var myCode = state.myCode;
+    return await storeArrayMutate(kChat(chatId), function(arr){
+      var changed = false;
+      for(var i=0;i<arr.length;i++){
+        var m = arr[i];
+        if(m.from !== myCode){
+          if(!m.delivered){ m.delivered = true; changed = true; }
+          if(markRead && !m.read){ m.read = true; changed = true; }
+        }
       }
-    }
-    if(changed){ await storeSet(kChat(chatId), arr); }
-    return changed;
+      return changed;
+    });
   }
 
   function ensureNotifPermission(){
@@ -840,7 +900,8 @@
     } else {
       items.forEach(function(it){
         var last = state.lastMsgMap[it.id];
-        var preview = last ? ((last.from===state.myCode?"Kamu: ":"")+last.text) : "Mulai chat";
+        var lastText = last ? (last.type==="file" ? "📎 "+last.fileName : last.text) : "";
+        var preview = last ? ((last.from===state.myCode?"Kamu: ":"")+lastText) : "Mulai chat";
         var isOnline = it.code && state.presenceMap[it.code] && (Date.now()-state.presenceMap[it.code] < ONLINE_WINDOW_MS);
         var isUnread = !!(last && last.from !== state.myCode && !last.read);
         var row = document.createElement("div");
@@ -893,6 +954,17 @@
     refreshMessages().then(renderApp);
   }
 
+  function buildFileBubbleContent(m){
+    var isImage = (m.fileType||"").indexOf("image/") === 0;
+    if(isImage){
+      return '<a href="'+m.fileData+'" download="'+escapeHtml(m.fileName)+'" target="_blank" rel="noopener">'+
+        '<img class="file-image" src="'+m.fileData+'" alt="'+escapeHtml(m.fileName)+'"/></a>';
+    }
+    return '<a class="file-chip" href="'+m.fileData+'" download="'+escapeHtml(m.fileName)+'">'+
+      '<span class="file-chip-icon">'+ICONS.attach+'</span>'+
+      '<span class="file-chip-name">'+escapeHtml(m.fileName)+'</span></a>';
+  }
+
   function buildMessagesInnerHTML(){
     var html = "";
     var lastDay = null;
@@ -904,11 +976,13 @@
       }
       var isOut = m.from === state.myCode;
       var senderName = (state.activeChat.type==="group" && !isOut) ? (m.fromName || m.from) : "";
+      var isFile = m.type === "file";
+      var bodyHtml = isFile ? buildFileBubbleContent(m) : '<span class="msg-text">'+escapeHtml(m.text)+'</span>';
       html +=
         '<div class="msg-row '+(isOut?"out":"in")+'">'+
-          '<div class="bubble '+(isOut?"out":"in")+'">'+
+          '<div class="bubble '+(isOut?"out":"in")+(isFile?" bubble-file":"")+'">'+
             (senderName ? '<span class="sender-tag">'+escapeHtml(senderName)+'</span>' : '')+
-            '<span class="msg-text">'+escapeHtml(m.text)+'</span>'+
+            bodyHtml+
             '<div class="msg-meta">'+fmtTime(m.ts)+ (isOut? ' '+checkIconFor(m) : '')+'</div>'+
           '</div>'+
         '</div>';
@@ -918,10 +992,11 @@
 
   async function refreshMessages(){
     if(!state.activeChat) return;
-    var arr = (await storeGet(kChat(state.activeChat.id))) || [];
-    await markIncomingDeliveredRead(state.activeChat.id, arr, true);
+    var chatId = state.activeChat.id;
+    await markIncomingDeliveredRead(chatId, true);
+    var arr = (await storeGet(kChat(chatId))) || [];
     state.messages = arr;
-    if(arr.length) state.lastMsgMap[state.activeChat.id] = arr[arr.length-1];
+    if(arr.length) state.lastMsgMap[chatId] = arr[arr.length-1];
   }
 
   function buildMain(){
@@ -983,6 +1058,7 @@
     inputBar.innerHTML =
       '<button class="icon-btn" id="btn-emoji" '+disabled+'>'+ICONS.emoji+'</button>'+
       '<button class="icon-btn" id="btn-attach" '+disabled+'>'+ICONS.attach+'</button>'+
+      '<input id="file-input" type="file" style="display:none" accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar"/>'+
       '<input id="msg-input" type="text" placeholder="'+(state.activeChat?'Ketik pesan':'Pilih kontak atau grup')+'" value="'+escapeHtml(draftVal)+'" '+disabled+'/>'+
       '<button class="send-btn" id="btn-send" title="Kirim" '+disabled+'>'+ICONS.send+'</button>';
     el.appendChild(inputBar);
@@ -992,10 +1068,20 @@
       if(box) box.scrollTop = box.scrollHeight;
       var back = document.getElementById("btn-back");
       if(back) back.onclick = function(){ state.activeChat = null; renderApp(); };
-      ["hd-mail","hd-video","hd-phone","btn-emoji","btn-attach"].forEach(function(id){
+      ["hd-mail","hd-video","hd-phone","btn-emoji"].forEach(function(id){
         var e = document.getElementById(id);
         if(e) e.onclick = function(){ toast("Fitur ini belum tersedia di versi ini."); };
       });
+      var attachBtn = document.getElementById("btn-attach");
+      var fileInput = document.getElementById("file-input");
+      if(attachBtn && fileInput){
+        attachBtn.onclick = function(){ if(state.activeChat) fileInput.click(); };
+        fileInput.onchange = function(e){
+          var f = e.target.files && e.target.files[0];
+          fileInput.value = "";
+          if(f) handleFileSelected(f);
+        };
+      }
       var dotsBtn = document.getElementById("hd-dots");
       if(dotsBtn) dotsBtn.onclick = function(){
         if(!state.activeChat){ toast("Fitur ini belum tersedia di versi ini."); return; }
@@ -1045,12 +1131,38 @@
     toast(it.type === "group" ? "Kamu keluar dari grup." : "Obrolan dihapus dari daftar kamu.");
   }
 
+  var MAX_FILE_BYTES = 700 * 1024; // batas aman biar tidak kena limit ukuran dokumen di Firestore (1MB)
+
+  function handleFileSelected(f){
+    if(!state.activeChat) return;
+    if(f.size > MAX_FILE_BYTES){
+      toast("File terlalu besar (maks sekitar 700KB). Coba kompres dulu atau pilih file lain.");
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e){ sendFileMessage(f.name, f.type, e.target.result); };
+    reader.onerror = function(){ toast("Gagal membaca file."); };
+    reader.readAsDataURL(f);
+  }
+
+  async function sendFileMessage(fileName, fileType, dataUrl){
+    var chat = state.activeChat;
+    var msg = {from:state.myCode, fromName:state.myName, ts:Date.now(), delivered:false, read:false,
+      type:"file", fileName:fileName, fileType:fileType||"", fileData:dataUrl, text:""};
+    state.messages.push(msg);
+    renderApp();
+    var ok = await storeArrayAppend(kChat(chat.id), msg);
+    if(!ok){ toast("Gagal mengirim file. Kemungkinan ukuran riwayat chat ini sudah penuh, atau jaringan bermasalah."); }
+    refreshMessages().then(renderApp);
+  }
+
   async function sendMessage(text){
     var chat = state.activeChat;
     var msg = {from:state.myCode, fromName:state.myName, text:text, ts:Date.now(), delivered:false, read:false};
     state.messages.push(msg);
     renderApp();
-    await storeArrayAppend(kChat(chat.id), msg);
+    var ok = await storeArrayAppend(kChat(chat.id), msg);
+    if(!ok){ toast("Gagal mengirim pesan (jaringan bermasalah). Coba kirim lagi."); }
     refreshMessages().then(renderApp);
   }
 
