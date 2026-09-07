@@ -80,7 +80,7 @@
   .avatar.lg{width:72px;height:72px;font-size:24px;}
   .avatar.qm{background:#3a4a53;color:var(--text-muted);}
   .online-dot{position:absolute;bottom:0;right:0;width:11px;height:11px;border-radius:50%;background:var(--online);border:2px solid var(--bg-sidebar);}
-  .icon-btn{width:38px;height:38px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#aebac1;}
+  .icon-btn{width:38px;height:38px;border-radius:50%;border:none;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#aebac1;font-size:19px;font-weight:700;}
   .icon-btn:hover{background:#ffffff14;}
   .icon-btn svg{width:21px;height:21px;fill:currentColor;}
   .header-icons{display:flex;gap:2px;align-items:center;}
@@ -103,12 +103,12 @@
   .chat-item-preview.unread{color:var(--text-main);font-weight:600;}
   .chat-item-time-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0;}
   .unread-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block;flex-shrink:0;}
-  .pin-btn{background:none;border:none;cursor:pointer;padding:1px;opacity:.35;display:inline-flex;flex-shrink:0;}
-  .pin-btn:hover{opacity:.8;}
+  .pin-btn{width:22px;height:22px;background:none;border:none;cursor:pointer;padding:2px;opacity:.55;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .pin-btn:hover, .pin-btn:active{opacity:1;background:#ffffff1a;border-radius:50%;}
   .pin-btn.pinned{opacity:1;}
-  .pin-btn svg{width:14px;height:14px;fill:var(--text-muted);}
+  .pin-btn svg{width:15px;height:15px;fill:var(--text-muted);}
   .pin-btn.pinned svg{fill:var(--accent);}
-  .chat-item.pinned-item{background:#ffffff05;}
+  .chat-item.pinned-item{background:#ffffff08;}
 
   .empty-list{padding:40px 24px;text-align:center;color:var(--text-muted);font-size:13.5px;line-height:1.6;}
   .empty-list button{margin-top:14px;}
@@ -200,13 +200,12 @@
 
   /* ---------- REPLY ---------- */
   .bubble{position:relative;}
-  .msg-actions{position:absolute;top:2px;display:none;gap:1px;background:#0b141acc;border-radius:14px;padding:2px;}
-  .bubble:hover .msg-actions{display:flex;}
-  .bubble.out .msg-actions{left:-58px;}
-  .bubble.in .msg-actions{right:-58px;}
-  .msg-action-btn{width:22px;height:22px;border-radius:50%;border:none;background:transparent;color:#cfd6d9;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-  .msg-action-btn:hover{background:#ffffff22;}
-  .msg-action-btn svg{width:13px;height:13px;fill:currentColor;}
+  .msg-actions{display:none;}
+  .msg-action-btn{width:26px;height:26px;border-radius:50%;border:none;background:#ffffff14;color:#cfd6d9;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+  .msg-action-btn:hover, .msg-action-btn:active{background:#ffffff30;}
+  .msg-action-btn svg{width:14px;height:14px;fill:currentColor;}
+  .msg-meta{display:flex;align-items:center;justify-content:flex-end;gap:5px;margin-top:3px;}
+  .msg-meta-time{display:flex;align-items:center;gap:4px;font-size:11px;color:#8696a0aa;white-space:nowrap;}
   .reply-quote{background:#ffffff14;border-left:3px solid var(--accent);padding:4px 8px;border-radius:4px;margin-bottom:4px;font-size:12px;color:#c8d0d3;cursor:pointer;}
   .reply-quote b{color:var(--accent);display:block;font-size:12px;}
   .reply-bar{background:var(--bg-header);padding:8px 14px;display:flex;align-items:center;gap:10px;border-top:1px solid var(--border);flex-shrink:0;}
@@ -272,7 +271,10 @@
   /* ---------- STICKER ---------- */
   .bubble.sticker-bubble{background:transparent!important;box-shadow:none;padding:0;}
   .sticker-img{font-size:80px;line-height:1;display:block;}
+  .sticker-img-file{width:140px;height:140px;object-fit:contain;display:block;border-radius:8px;}
   .sticker-bubble .msg-meta{background:#0b141a99;border-radius:8px;padding:1px 5px;position:absolute;bottom:4px;right:4px;margin:0;}
+  .sticker-upload-btn{background:var(--bg-input)!important;border-radius:8px!important;display:flex;align-items:center;justify-content:center;}
+  .sticker-upload-btn svg{width:22px;height:22px;fill:var(--accent);}
 
   /* ---------- EMOJI PANEL & STICKER PANEL ---------- */
   .emoji-panel,
@@ -1121,7 +1123,7 @@
     } else {
       items.forEach(function(it){
         var last = state.lastMsgMap[it.id];
-        var lastText = last ? (last.type==="file" ? "📎 "+last.fileName : (last.type==="sticker" ? "Sticker" : last.text)) : "";
+        var lastText = last ? (last.type==="file" ? (last.isSticker ? "Sticker" : "📎 "+last.fileName) : (last.type==="sticker" ? "Sticker" : last.text)) : "";
         var preview = last ? ((last.from===state.myCode?"Kamu: ":"")+lastText) : "Mulai chat";
         var isOnline = it.code && state.presenceMap[it.code] && (Date.now()-state.presenceMap[it.code] < ONLINE_WINDOW_MS);
         var isUnread = !!(last && last.from !== state.myCode && !last.read);
@@ -1404,10 +1406,26 @@
     refreshMessages().then(renderApp);
   }
 
+  async function renameContact(code, newName){
+    var ok = await storeArrayMutate(kContacts(state.myCode), function(arr){
+      var c = arr.filter(function(x){ return x.code === code; })[0];
+      if(!c) return false;
+      c.name = newName;
+      return true;
+    });
+    if(!ok){ toast("Gagal menyimpan nama baru. Coba lagi."); return; }
+    await loadUserData();
+    if(state.activeChat && state.activeChat.code === code){ state.activeChat.title = newName; }
+    renderApp();
+    toast("Nama kontak diubah menjadi \""+newName+"\".");
+  }
+
   async function togglePin(chatId){
     var idx = state.pinnedIds.indexOf(chatId);
-    if(idx === -1) state.pinnedIds.push(chatId); else state.pinnedIds.splice(idx,1);
+    var willPin = idx === -1;
+    if(willPin) state.pinnedIds.push(chatId); else state.pinnedIds.splice(idx,1);
     renderApp();
+    toast(willPin ? "Disematkan ke atas." : "Sematan dilepas.");
     await storeSet(kPinned(state.myCode), state.pinnedIds);
   }
 
@@ -1478,12 +1496,16 @@
       var isOut = m.from === state.myCode;
       var isGroupChat = state.activeChat.type === "group";
       var senderName = (isGroupChat && !isOut) ? (m.fromName || m.from) : "";
-      var isFile = m.type === "file";
-      var isSticker = m.type === "sticker";
+      var isImageSticker = m.type === "file" && m.isSticker;
+      var isFile = m.type === "file" && !isImageSticker;
+      var isEmojiSticker = m.type === "sticker";
+      var isSticker = isImageSticker || isEmojiSticker;
       var bodyHtml;
       if(isFile){
         bodyHtml = buildFileBubbleContent(m);
-      } else if(isSticker){
+      } else if(isImageSticker){
+        bodyHtml = '<img class="sticker-img-file" src="'+m.fileData+'" alt="sticker"/>';
+      } else if(isEmojiSticker){
         bodyHtml = '<span class="sticker-img">'+escapeHtml(m.text)+'</span>';
       } else {
         var escaped = escapeHtml(m.text);
@@ -1491,10 +1513,8 @@
       }
       var quoteHtml = m.replyTo ? '<div class="reply-quote"><b>'+escapeHtml(m.replyTo.name)+'</b>'+escapeHtml(m.replyTo.preview)+'</div>' : "";
       var actionsHtml =
-        '<div class="msg-actions">'+
           '<button class="msg-action-btn" data-reply-id="'+escapeHtml(m.id||"")+'" title="Balas">'+ICONS.reply+'</button>'+
-          (isOut ? '<button class="msg-action-btn" data-del-id="'+escapeHtml(m.id||"")+'" title="Hapus">'+ICONS.trash+'</button>' : '')+
-        '</div>';
+          (isOut ? '<button class="msg-action-btn" data-del-id="'+escapeHtml(m.id||"")+'" title="Hapus">'+ICONS.trash+'</button>' : '');
       var senderTagHtml = "";
       if(senderName){
         var known = isKnownContact(m.from);
@@ -1503,11 +1523,10 @@
       html +=
         '<div class="msg-row '+(isOut?"out":"in")+'">'+
           '<div class="bubble '+(isOut?"out":"in")+(isFile?" bubble-file":"")+(isSticker?" sticker-bubble":"")+'">'+
-            actionsHtml+
             senderTagHtml+
             quoteHtml+
             bodyHtml+
-            '<div class="msg-meta">'+fmtTime(m.ts)+ (isOut? ' '+checkIconFor(m) : '')+'</div>'+
+            '<div class="msg-meta">'+actionsHtml+'<span class="msg-meta-time">'+fmtTime(m.ts)+ (isOut? ' '+checkIconFor(m) : '')+'</span></div>'+
           '</div>'+
         '</div>';
     });
@@ -1583,6 +1602,7 @@
           menuHtml =
             '<div class="header-menu">'+
               '<button id="hm-pin">'+pinLabel+'</button>'+
+              '<button id="hm-rename">Ubah Nama Kontak</button>'+
               '<button id="hm-clear-chat">Hapus Semua Pesan</button>'+
               '<button class="danger" id="hm-delete-chat">Hapus Obrolan</button>'+
             '</div>';
@@ -1667,10 +1687,12 @@
     inputBar.className = "chat-input-bar";
     var disabled = state.activeChat ? "" : "disabled";
     var draftVal = (state.activeChat && state.draftMessages[state.activeChat.id]) || "";
+    var isGroupInput = state.activeChat && state.activeChat.type === "group";
     inputBar.innerHTML =
       '<button class="icon-btn" id="btn-emoji" '+disabled+' title="Emoji">'+ICONS.emoji+'</button>'+
       '<button class="icon-btn" id="btn-sticker" '+disabled+' title="Stiker">'+ICONS.sticker+'</button>'+
       '<button class="icon-btn" id="btn-attach" '+disabled+' title="Lampiran">'+ICONS.attach+'</button>'+
+      (isGroupInput ? '<button class="icon-btn" id="btn-tag" title="Tandai anggota">@</button>' : '')+
       '<input id="file-input" type="file" style="display:none" accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar"/>'+
       '<input id="msg-input" type="text" placeholder="'+(state.activeChat?'Ketik pesan':'Pilih kontak atau grup')+'" value="'+escapeHtml(draftVal)+'" '+disabled+'/>'+
       '<button class="send-btn" id="btn-send" title="Kirim" '+disabled+'>'+ICONS.send+'</button>';
@@ -1712,6 +1734,16 @@
         setTimeout(function(){ document.addEventListener("click", closeHeaderMenuOnce); },0);
         var pinMenuBtn = document.getElementById("hm-pin");
         if(pinMenuBtn) pinMenuBtn.onclick = function(){ state.headerMenuOpen = false; togglePin(state.activeChat.id); };
+        var renameBtn = document.getElementById("hm-rename");
+        if(renameBtn) renameBtn.onclick = function(){
+          state.headerMenuOpen = false;
+          var it = state.activeChat;
+          var newName = prompt("Ubah nama kontak \""+it.title+"\" menjadi:", it.title);
+          if(newName === null) return;
+          newName = newName.trim();
+          if(!newName){ toast("Nama tidak boleh kosong."); return; }
+          renameContact(it.code, newName);
+        };
         var addMemberBtn = document.getElementById("hm-add-member");
         if(addMemberBtn) addMemberBtn.onclick = function(){
           state.headerMenuOpen = false;
@@ -1745,13 +1777,31 @@
         input.oninput = function(e){
           state.draftMessages[chatIdForDraft] = e.target.value;
           if(state.activeChat.type === "group"){
-            var m = /(^|\s)@([^\s@]*)$/.exec(e.target.value);
-            var newQuery = m ? m[2].toLowerCase() : null;
+            var m = /@([^\s@]*)$/.exec(e.target.value);
+            var newQuery = m ? m[1].toLowerCase() : null;
             if(newQuery !== state.mentionQuery){
               state.mentionQuery = newQuery;
               renderApp();
             }
           }
+        };
+        function insertMention(name){
+          var val = input.value;
+          if(/@([^\s@]*)$/.test(val)){
+            val = val.replace(/@([^\s@]*)$/, "@"+name+" ");
+          } else {
+            if(val && !/\s$/.test(val)) val += " ";
+            val += "@"+name+" ";
+          }
+          input.value = val;
+          state.draftMessages[chatIdForDraft] = val;
+          state.mentionQuery = null;
+          renderApp();
+        }
+        var tagBtn = document.getElementById("btn-tag");
+        if(tagBtn) tagBtn.onclick = function(){
+          state.mentionQuery = (state.mentionQuery === null) ? "" : null;
+          renderApp();
         };
         function doSend(){
           var txt = input.value.trim();
@@ -1766,14 +1816,7 @@
         input.onkeydown = function(e){ if(e.key==="Enter") doSend(); if(e.key==="Escape"){ state.mentionQuery = null; renderApp(); } };
         sendBtn.onclick = doSend;
         document.querySelectorAll(".mention-item").forEach(function(mi){
-          mi.onclick = function(){
-            var name = mi.getAttribute("data-name");
-            var newVal = input.value.replace(/(^|\s)@([^\s@]*)$/, function(full, pre){ return pre + "@" + name + " "; });
-            input.value = newVal;
-            state.draftMessages[chatIdForDraft] = newVal;
-            state.mentionQuery = null;
-            renderApp();
-          };
+          mi.onclick = function(){ insertMention(mi.getAttribute("data-name")); };
         });
         var caret = input.value.length;
         input.focus();
@@ -1895,6 +1938,29 @@
     var panel = document.createElement("div");
     panel.className = "sticker-panel";
 
+    var uploadBtn = document.createElement("button");
+    uploadBtn.className = "sticker-btn sticker-upload-btn";
+    uploadBtn.title = "Pilih gambar dari perangkat";
+    uploadBtn.innerHTML = ICONS.plus;
+    var stickerFileInput = document.createElement("input");
+    stickerFileInput.type = "file";
+    stickerFileInput.accept = "image/*";
+    stickerFileInput.style.display = "none";
+    stickerFileInput.onchange = function(e){
+      var f = e.target.files && e.target.files[0];
+      panel.remove();
+      document.removeEventListener("click", closePanelHandler);
+      if(!f) return;
+      if(f.size > MAX_FILE_BYTES){ toast("Gambar terlalu besar (maks ~700KB)."); return; }
+      var reader = new FileReader();
+      reader.onload = function(ev){ sendImageSticker(ev.target.result, f.type); };
+      reader.onerror = function(){ toast("Gagal membaca gambar."); };
+      reader.readAsDataURL(f);
+    };
+    uploadBtn.onclick = function(){ stickerFileInput.click(); };
+    panel.appendChild(uploadBtn);
+    panel.appendChild(stickerFileInput);
+
     STICKERS.forEach(function(emoji){
       var btn = document.createElement("button");
       btn.className = "sticker-btn";
@@ -1918,6 +1984,31 @@
     setTimeout(function(){
       document.addEventListener("click", closePanelHandler);
     },0);
+  }
+
+  async function sendImageSticker(dataUrl, fileType){
+    var chat = state.activeChat;
+    var replyTo = state.replyingTo; state.replyingTo = null;
+    var msg = {
+      id: randCode(10),
+      from: state.myCode,
+      fromName: state.myName,
+      text: "",
+      ts: Date.now(),
+      delivered: false,
+      read: false,
+      type: "file",
+      isSticker: true,
+      fileName: "sticker.png",
+      fileType: fileType || "image/png",
+      fileData: dataUrl,
+      replyTo: replyTo || null
+    };
+    state.messages.push(msg);
+    renderApp();
+    var ok = await storeArrayAppend(kChat(chat.id), msg);
+    if(!ok){ toast("Gagal mengirim sticker. Kemungkinan ukuran riwayat chat ini sudah penuh, atau jaringan bermasalah."); }
+    refreshMessages().then(renderApp);
   }
 
   async function sendSticker(emoji){
