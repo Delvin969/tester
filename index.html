@@ -103,11 +103,17 @@
   .chat-item-preview.unread{color:var(--text-main);font-weight:600;}
   .chat-item-time-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0;}
   .unread-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block;flex-shrink:0;}
+  .pin-btn{background:none;border:none;cursor:pointer;padding:1px;opacity:.35;display:inline-flex;flex-shrink:0;}
+  .pin-btn:hover{opacity:.8;}
+  .pin-btn.pinned{opacity:1;}
+  .pin-btn svg{width:14px;height:14px;fill:var(--text-muted);}
+  .pin-btn.pinned svg{fill:var(--accent);}
+  .chat-item.pinned-item{background:#ffffff05;}
 
   .empty-list{padding:40px 24px;text-align:center;color:var(--text-muted);font-size:13.5px;line-height:1.6;}
   .empty-list button{margin-top:14px;}
 
-  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;}
   .chat-header{height:60px;background:var(--bg-header);display:flex;align-items:center;padding:0 16px;gap:12px;border-bottom:1px solid var(--border);flex-shrink:0;}
   .chat-header-info{flex:1;min-width:0;cursor:default;}
   .chat-header-name{font-size:16px;font-weight:500;}
@@ -127,7 +133,15 @@
   .bubble{max-width:65%;padding:6px 9px 8px 9px;border-radius:8px;position:relative;font-size:14.3px;line-height:1.4;box-shadow:0 1px .5px rgba(0,0,0,.3);}
   .bubble.in{background:var(--bubble-in);border-top-left-radius:0;}
   .bubble.out{background:var(--bubble-out);border-top-right-radius:0;}
-  .bubble .sender-tag{font-size:12.5px;font-weight:600;color:#6bd6c5;margin-bottom:2px;display:block;}
+  .bubble .sender-tag{font-size:12.5px;font-weight:600;color:#6bd6c5;margin-bottom:2px;display:flex;align-items:center;gap:4px;cursor:default;}
+  .bubble .sender-tag.clickable{cursor:pointer;}
+  .bubble .sender-tag.clickable:hover{text-decoration:underline;}
+  .bubble .sender-tag svg{width:12px;height:12px;fill:#6bd6c5;flex-shrink:0;}
+  .mention-tag{background:#00a88433;color:#6bd6c5;border-radius:4px;padding:0 3px;font-weight:600;}
+  .mention-tag.mention-me{background:var(--accent);color:#062b23;}
+  .mention-list{position:absolute;bottom:64px;left:12px;right:12px;background:var(--bg-header);border:1px solid var(--border);border-radius:10px;max-height:180px;overflow-y:auto;box-shadow:0 -4px 16px rgba(0,0,0,.4);z-index:5;}
+  .mention-item{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;font-size:14px;}
+  .mention-item:hover{background:var(--bg-panel-hover);}
   .bubble .msg-text{white-space:pre-wrap;word-break:break-word;color:var(--text-main);}
   .bubble.bubble-file{padding:6px;}
   .file-image{max-width:240px;max-height:280px;border-radius:6px;display:block;cursor:pointer;}
@@ -350,7 +364,8 @@
     notebook:'<svg viewBox="0 0 24 24"><path d="M6 2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm1 4v2h9V6H7zm0 4v2h9v-2H7zm0 4v2h6v-2H7z"/></svg>',
     camera:'<svg viewBox="0 0 24 24"><path d="M9 3l-1.8 2H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>',
     sticker:'<svg viewBox="0 0 24 24"><path d="M5 3h10l6 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm9 1.5V9a1 1 0 0 0 1 1h4.5L14 4.5zM8.5 13a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zm7 0a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zM8 17.3c1.1.9 2.4 1.4 4 1.4s2.9-.5 4-1.4"/></svg>',
-    logout:'<svg viewBox="0 0 24 24" width="21" height="21" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4z"/></svg>'
+    logout:'<svg viewBox="0 0 24 24" width="21" height="21" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4z"/></svg>',
+    pin:'<svg viewBox="0 0 24 24"><path d="M14 4v6l2 2v2h-5v6l-1 1-1-1v-6H4v-2l2-2V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/></svg>'
   };
 
   var EMOJIS = ["😀","😁","😂","🤣","😃","😄","😅","😆","😉","😊","😋","😎","😍","🥰","😘","😗","😙","😚","🙂","🤗","🤩","🤔","🤨","😐","😑","😶","🙄","😏","😣","😥","😮","🤐","😯","😪","😫","😴","😌","😛","😜","😝","🤤","😒","😓","😔","😕","🙃","🤑","😲","☹️","🙁","😖","😞","😟","😤","😢","😭","😦","😧","😨","😩","🤯","😬","😰","😱","🥵","🥶","😳","🤪","😵","😡","😠","🤬","😷","🤒","🤕","🤢","🤮","🤧","😇","🥳","🥺","🤠","🤡","🤥","🤫","🤭","🧐","🤓","😈","👿","🤖","💀","👻","👽","🤖","🎃","😺","😸","😹","😻","😼","😽","🙀","😿","😾"];
@@ -614,6 +629,7 @@
   function kPresence(code){ return PFX+"presence_"+code; }
   function kNotes(code){ return PFX+"notes_"+code; }
   function kStatus(code){ return PFX+"status_"+code; }
+  function kPinned(code){ return PFX+"pinned_"+code; }
   function dmId(a,b){ return "dm_"+[a,b].sort().join("__"); }
   var STATUS_TTL_MS = 24*60*60*1000;
   var STATUS_COLORS = ["#00a884","#7c4dff","#ff9800","#e91e63","#3f9fdb","#ab47bc","#ff7043","#26a69a","#5c6bc0","#d32f2f"];
@@ -755,7 +771,9 @@
     tmpName: "",
     tmpCode: "",
     generatedBlobId: "",
-    searchQuery: ""
+    searchQuery: "",
+    pinnedIds: [],
+    mentionQuery: null
   };
 
   /* ============== CHECK STATUS & NOTIFIKASI ============== */
@@ -954,6 +972,8 @@
       if(p) pMap[state.contacts[j].code] = p;
     }
     state.presenceMap = pMap;
+    var pinned = await storeGet(kPinned(state.myCode));
+    state.pinnedIds = pinned || [];
     var items = buildChatListItems();
     var lm = {};
     var newIncoming = [];
@@ -1084,6 +1104,9 @@
     list.className = "chat-list";
     var items = buildChatListItems();
     items.sort(function(a,b){
+      var pa = state.pinnedIds.indexOf(a.id) !== -1;
+      var pb = state.pinnedIds.indexOf(b.id) !== -1;
+      if(pa !== pb) return pa ? -1 : 1;
       var ta = (state.lastMsgMap[a.id]||{}).ts || 0;
       var tb = (state.lastMsgMap[b.id]||{}).ts || 0;
       return tb - ta;
@@ -1102,17 +1125,20 @@
         var preview = last ? ((last.from===state.myCode?"Kamu: ":"")+lastText) : "Mulai chat";
         var isOnline = it.code && state.presenceMap[it.code] && (Date.now()-state.presenceMap[it.code] < ONLINE_WINDOW_MS);
         var isUnread = !!(last && last.from !== state.myCode && !last.read);
+        var isPinned = state.pinnedIds.indexOf(it.id) !== -1;
         var row = document.createElement("div");
-        row.className = "chat-item" + (state.activeChat && state.activeChat.id===it.id ? " active" : "");
+        row.className = "chat-item" + (state.activeChat && state.activeChat.id===it.id ? " active" : "") + (isPinned ? " pinned-item" : "");
         row.innerHTML =
           '<div class="avatar md" style="background:'+colorFor(it.code||it.groupId)+'">'+initials(it.title)+(isOnline?'<span class="online-dot"></span>':'')+'</div>'+
           '<div class="chat-item-body">'+
             '<div class="chat-item-top"><span class="chat-item-name">'+escapeHtml(it.title)+'</span>'+
-              '<span class="chat-item-time-wrap">'+(isUnread?'<span class="unread-dot"></span>':'')+(last ? '<span class="chat-item-time">'+fmtTime(last.ts)+'</span>' : '')+'</span>'+
+              '<span class="chat-item-time-wrap"><button class="pin-btn'+(isPinned?' pinned':'')+'" data-pin-id="'+escapeHtml(it.id)+'" title="'+(isPinned?"Lepas pin":"Pin obrolan")+'">'+ICONS.pin+'</button>'+(isUnread?'<span class="unread-dot"></span>':'')+(last ? '<span class="chat-item-time">'+fmtTime(last.ts)+'</span>' : '')+'</span>'+
             '</div>'+
             '<div class="chat-item-preview'+(isUnread?' unread':'')+'">'+escapeHtml(preview)+'</div>'+
           '</div>';
         row.onclick = function(){ openChat(it); };
+        var pinBtnEl = row.querySelector(".pin-btn");
+        if(pinBtnEl) pinBtnEl.onclick = function(e){ e.stopPropagation(); togglePin(it.id); };
         list.appendChild(row);
       });
     }
@@ -1373,9 +1399,61 @@
     state.messages = [];
     state.replyingTo = null;
     state.headerMenuOpen = false;
+    state.mentionQuery = null;
     renderApp();
     refreshMessages().then(renderApp);
   }
+
+  async function togglePin(chatId){
+    var idx = state.pinnedIds.indexOf(chatId);
+    if(idx === -1) state.pinnedIds.push(chatId); else state.pinnedIds.splice(idx,1);
+    renderApp();
+    await storeSet(kPinned(state.myCode), state.pinnedIds);
+  }
+
+  function memberDisplayName(code){
+    if(code === state.myCode) return state.myName;
+    var c = state.contacts.filter(function(x){return x.code===code;})[0];
+    if(c) return c.name;
+    var msg = state.messages.filter(function(x){return x.from===code && x.fromName;})[0];
+    if(msg) return msg.fromName;
+    return code;
+  }
+
+  function isKnownContact(code){
+    return code === state.myCode || state.contacts.some(function(c){ return c.code === code; });
+  }
+
+  async function quickAddContact(code, fallbackName){
+    if(!code || code === state.myCode) return;
+    if(isKnownContact(code)){ toast("\""+fallbackName+"\" sudah ada di kontak kamu."); return; }
+    if(!confirm("Tambahkan \""+fallbackName+"\" (#"+code+") ke daftar kontak kamu?")) return;
+    var target = await storeGet(kUser(code));
+    var nameToUse = (target && target.name) ? target.name : fallbackName;
+    await storeArrayAppendIfAbsent(kContacts(state.myCode), {code:code, name:nameToUse}, function(c){ return c.code===code; });
+    await storeArrayAppendIfAbsent(kContacts(code), {code:state.myCode, name:state.myName}, function(c){ return c.code===state.myCode; });
+    await loadUserData();
+    renderApp();
+    toast("\""+nameToUse+"\" ditambahkan ke kontak.");
+  }
+
+  function highlightMentions(escapedText, groupId){
+    var grp = state.groups[groupId];
+    if(!grp) return escapedText;
+    var names = grp.members.map(memberDisplayName).filter(Boolean);
+    names = names.filter(function(v,i,a){ return v && a.indexOf(v)===i; });
+    names.sort(function(a,b){ return b.length - a.length; });
+    var result = escapedText;
+    names.forEach(function(name){
+      var escName = escapeHtml(name);
+      if(!escName) return;
+      var isMe = (name === state.myName);
+      var re = new RegExp("@"+escName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+"(?![a-zA-Z0-9_])","g");
+      result = result.replace(re, '<span class="mention-tag'+(isMe?' mention-me':'')+'">@'+escName+'</span>');
+    });
+    return result;
+  }
+
 
   function buildFileBubbleContent(m){
     var isImage = (m.fileType||"").indexOf("image/") === 0;
@@ -1398,7 +1476,8 @@
         lastDay = day;
       }
       var isOut = m.from === state.myCode;
-      var senderName = (state.activeChat.type==="group" && !isOut) ? (m.fromName || m.from) : "";
+      var isGroupChat = state.activeChat.type === "group";
+      var senderName = (isGroupChat && !isOut) ? (m.fromName || m.from) : "";
       var isFile = m.type === "file";
       var isSticker = m.type === "sticker";
       var bodyHtml;
@@ -1407,7 +1486,8 @@
       } else if(isSticker){
         bodyHtml = '<span class="sticker-img">'+escapeHtml(m.text)+'</span>';
       } else {
-        bodyHtml = '<span class="msg-text">'+escapeHtml(m.text)+'</span>';
+        var escaped = escapeHtml(m.text);
+        bodyHtml = '<span class="msg-text">'+(isGroupChat ? highlightMentions(escaped, state.activeChat.groupId) : escaped)+'</span>';
       }
       var quoteHtml = m.replyTo ? '<div class="reply-quote"><b>'+escapeHtml(m.replyTo.name)+'</b>'+escapeHtml(m.replyTo.preview)+'</div>' : "";
       var actionsHtml =
@@ -1415,11 +1495,16 @@
           '<button class="msg-action-btn" data-reply-id="'+escapeHtml(m.id||"")+'" title="Balas">'+ICONS.reply+'</button>'+
           (isOut ? '<button class="msg-action-btn" data-del-id="'+escapeHtml(m.id||"")+'" title="Hapus">'+ICONS.trash+'</button>' : '')+
         '</div>';
+      var senderTagHtml = "";
+      if(senderName){
+        var known = isKnownContact(m.from);
+        senderTagHtml = '<span class="sender-tag'+(known?'':' clickable')+'" '+(known?'':'data-add-code="'+escapeHtml(m.from)+'" data-add-name="'+escapeHtml(senderName)+'"')+' title="'+(known?'':'Klik untuk simpan ke kontak')+'">'+escapeHtml(senderName)+(known?'':' '+ICONS.addUser)+'</span>';
+      }
       html +=
         '<div class="msg-row '+(isOut?"out":"in")+'">'+
           '<div class="bubble '+(isOut?"out":"in")+(isFile?" bubble-file":"")+(isSticker?" sticker-bubble":"")+'">'+
             actionsHtml+
-            (senderName ? '<span class="sender-tag">'+escapeHtml(senderName)+'</span>' : '')+
+            senderTagHtml+
             quoteHtml+
             bodyHtml+
             '<div class="msg-meta">'+fmtTime(m.ts)+ (isOut? ' '+checkIconFor(m) : '')+'</div>'+
@@ -1458,6 +1543,11 @@
         renderApp();
       };
     });
+    box.querySelectorAll(".sender-tag.clickable[data-add-code]").forEach(function(tag){
+      tag.onclick = function(){
+        quickAddContact(tag.getAttribute("data-add-code"), tag.getAttribute("data-add-name"));
+      };
+    });
   }
 
   async function refreshMessages(){
@@ -1477,11 +1567,14 @@
     header.className = "chat-header";
     if(state.activeChat){
       var isGroupChat = state.activeChat.type === "group";
+      var isPinnedChat = state.pinnedIds.indexOf(state.activeChat.id) !== -1;
+      var pinLabel = isPinnedChat ? "Lepas Pin" : "Pin ke Atas";
       var menuHtml = "";
       if(state.headerMenuOpen){
         if(isGroupChat){
           menuHtml =
             '<div class="header-menu">'+
+              '<button id="hm-pin">'+pinLabel+'</button>'+
               '<button id="hm-add-member">Tambah Anggota</button>'+
               '<button id="hm-clear-chat">Hapus Semua Pesan</button>'+
               '<button class="danger" id="hm-leave-group">Keluar dari Grup</button>'+
@@ -1489,6 +1582,7 @@
         } else {
           menuHtml =
             '<div class="header-menu">'+
+              '<button id="hm-pin">'+pinLabel+'</button>'+
               '<button id="hm-clear-chat">Hapus Semua Pesan</button>'+
               '<button class="danger" id="hm-delete-chat">Hapus Obrolan</button>'+
             '</div>';
@@ -1548,6 +1642,27 @@
       el.appendChild(replyBar);
     }
 
+    var mentionCandidates = [];
+    if(state.activeChat && state.activeChat.type === "group" && state.mentionQuery !== null){
+      var grpForMention = state.groups[state.activeChat.groupId];
+      if(grpForMention){
+        mentionCandidates = grpForMention.members
+          .filter(function(code){ return code !== state.myCode; })
+          .map(function(code){ return {code:code, name:memberDisplayName(code)}; })
+          .filter(function(c){ return c.name.toLowerCase().indexOf(state.mentionQuery) !== -1; });
+      }
+    }
+    if(mentionCandidates.length){
+      var mentionList = document.createElement("div");
+      mentionList.className = "mention-list";
+      mentionList.innerHTML = mentionCandidates.map(function(c){
+        return '<div class="mention-item" data-name="'+escapeHtml(c.name)+'">'+
+          '<div class="avatar sm" style="width:28px;height:28px;font-size:12px;background:'+colorFor(c.code)+'">'+initials(c.name)+'</div>'+
+          '<span>'+escapeHtml(c.name)+'</span></div>';
+      }).join("");
+      el.appendChild(mentionList);
+    }
+
     var inputBar = document.createElement("div");
     inputBar.className = "chat-input-bar";
     var disabled = state.activeChat ? "" : "disabled";
@@ -1595,6 +1710,8 @@
       };
       if(state.headerMenuOpen){
         setTimeout(function(){ document.addEventListener("click", closeHeaderMenuOnce); },0);
+        var pinMenuBtn = document.getElementById("hm-pin");
+        if(pinMenuBtn) pinMenuBtn.onclick = function(){ state.headerMenuOpen = false; togglePin(state.activeChat.id); };
         var addMemberBtn = document.getElementById("hm-add-member");
         if(addMemberBtn) addMemberBtn.onclick = function(){
           state.headerMenuOpen = false;
@@ -1625,18 +1742,39 @@
         var chatIdForDraft = state.activeChat.id;
         var input = document.getElementById("msg-input");
         var sendBtn = document.getElementById("btn-send");
-        input.oninput = function(e){ state.draftMessages[chatIdForDraft] = e.target.value; };
+        input.oninput = function(e){
+          state.draftMessages[chatIdForDraft] = e.target.value;
+          if(state.activeChat.type === "group"){
+            var m = /(^|\s)@([^\s@]*)$/.exec(e.target.value);
+            var newQuery = m ? m[2].toLowerCase() : null;
+            if(newQuery !== state.mentionQuery){
+              state.mentionQuery = newQuery;
+              renderApp();
+            }
+          }
+        };
         function doSend(){
           var txt = input.value.trim();
           if(!txt) return;
           input.value = "";
           delete state.draftMessages[chatIdForDraft];
+          state.mentionQuery = null;
           var replyTo = state.replyingTo;
           state.replyingTo = null;
           sendMessage(txt, replyTo);
         }
-        input.onkeydown = function(e){ if(e.key==="Enter") doSend(); };
+        input.onkeydown = function(e){ if(e.key==="Enter") doSend(); if(e.key==="Escape"){ state.mentionQuery = null; renderApp(); } };
         sendBtn.onclick = doSend;
+        document.querySelectorAll(".mention-item").forEach(function(mi){
+          mi.onclick = function(){
+            var name = mi.getAttribute("data-name");
+            var newVal = input.value.replace(/(^|\s)@([^\s@]*)$/, function(full, pre){ return pre + "@" + name + " "; });
+            input.value = newVal;
+            state.draftMessages[chatIdForDraft] = newVal;
+            state.mentionQuery = null;
+            renderApp();
+          };
+        });
         var caret = input.value.length;
         input.focus();
         input.setSelectionRange(caret, caret);
