@@ -691,31 +691,50 @@
     }
   }
 
+  // PERBAIKAN: resizeImageToDataUrl dengan fallback
   function resizeImageToDataUrl(file, maxDim, mimeType, quality, square, callback){
     var reader = new FileReader();
     reader.onload = function(e){
       var img = new Image();
       img.onload = function(){
-        var w = img.width, h = img.height;
-        var canvas = document.createElement("canvas");
-        var ctx;
-        if(square){
-          var side = Math.min(w, h);
-          var sx = (w - side) / 2, sy = (h - side) / 2;
-          var outSide = Math.min(maxDim, side);
-          canvas.width = outSide; canvas.height = outSide;
-          ctx = canvas.getContext("2d");
-          ctx.drawImage(img, sx, sy, side, side, 0, 0, outSide, outSide);
-        } else {
-          var scale = Math.min(1, maxDim / Math.max(w, h));
-          canvas.width = Math.max(1, Math.round(w * scale));
-          canvas.height = Math.max(1, Math.round(h * scale));
-          ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        try {
+          var w = img.width, h = img.height;
+          var canvas = document.createElement("canvas");
+          var ctx;
+          if(square){
+            var side = Math.min(w, h);
+            var sx = (w - side) / 2, sy = (h - side) / 2;
+            var outSide = Math.min(maxDim, side);
+            canvas.width = outSide; canvas.height = outSide;
+            ctx = canvas.getContext("2d");
+            ctx.drawImage(img, sx, sy, side, side, 0, 0, outSide, outSide);
+          } else {
+            var scale = Math.min(1, maxDim / Math.max(w, h));
+            canvas.width = Math.max(1, Math.round(w * scale));
+            canvas.height = Math.max(1, Math.round(h * scale));
+            ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          }
+          var dataUrl;
+          try {
+            dataUrl = canvas.toDataURL(mimeType, quality);
+          } catch(e2) {
+            dataUrl = canvas.toDataURL("image/png");
+          }
+          callback(dataUrl);
+        } catch(e2) {
+          var directReader = new FileReader();
+          directReader.onload = function(ev){ callback(ev.target.result); };
+          directReader.onerror = function(){ callback(null); };
+          directReader.readAsDataURL(file);
         }
-        try{ callback(canvas.toDataURL(mimeType, quality)); }catch(e2){ callback(null); }
       };
-      img.onerror = function(){ callback(null); };
+      img.onerror = function(){
+        var directReader = new FileReader();
+        directReader.onload = function(ev){ callback(ev.target.result); };
+        directReader.onerror = function(){ callback(null); };
+        directReader.readAsDataURL(file);
+      };
       img.src = e.target.result;
     };
     reader.onerror = function(){ callback(null); };
@@ -950,8 +969,8 @@
     }
     emailCheckTimer = setTimeout(async function(){
       var ptr = await storeGet(kUserByEmail(email));
-      if(state.screen !== "login") return; // sudah pindah layar (mis. berhasil login/daftar), abaikan hasil basi ini
-      if(normEmail(state.tmpEmail) !== email) return; // email sudah berubah lagi selagi menunggu
+      if(state.screen !== "login") return;
+      if(normEmail(state.tmpEmail) !== email) return;
       if(ptr && ptr.nomor){
         var profile = await storeGet(kUser(ptr.nomor));
         state.emailCheckStatus = "existing";
@@ -977,7 +996,6 @@
     render();
   }
 
-  // MODIFIKASI: saveSession tidak menyimpan apa pun
   function saveSession(){
     // tidak menyimpan sesi otomatis lagi
   }
@@ -1009,7 +1027,6 @@
           state.loginBusy=false; state.loginError = "Kode masuk salah."; render(); return;
         }
       } else {
-        // akun lama (dibuat sebelum ada fitur kode masuk) -> simpan kode masuk sekarang
         profile.passcodeHash = enteredHash;
         await storeSet(kUser(profile.code), profile);
       }
@@ -1033,7 +1050,7 @@
 
     await storeSet(kPresence(state.myCode), Date.now());
     await loadUserData();
-    saveSession(); // tidak melakukan apa-apa
+    saveSession();
     state.loginBusy = false;
     state.tmpPasscode = "";
     state.screen = "app";
@@ -2028,12 +2045,18 @@
     },0);
   }
 
+  // PERBAIKAN: openStickerPanel dengan penyimpanan custom sticker
   function openStickerPanel(){
     if(!state.activeChat) return;
     if(document.querySelector(".sticker-panel")) return;
 
     var panel = document.createElement("div");
     panel.className = "sticker-panel";
+
+    var customStickers = [];
+    try {
+      customStickers = JSON.parse(localStorage.getItem("custom_stickers_" + state.myCode) || "[]");
+    } catch(e) {}
 
     var uploadBtn = document.createElement("button");
     uploadBtn.className = "sticker-btn sticker-upload-btn";
@@ -2050,13 +2073,39 @@
       if(!f) return;
       if(f.size > MAX_FILE_BYTES){ toast("Gambar terlalu besar (maks ~700KB)."); return; }
       var reader = new FileReader();
-      reader.onload = function(ev){ sendImageSticker(ev.target.result, f.type); };
+      reader.onload = function(ev){
+        var dataUrl = ev.target.result;
+        var newSticker = { id: randCode(10), dataUrl: dataUrl };
+        customStickers.push(newSticker);
+        try {
+          localStorage.setItem("custom_stickers_" + state.myCode, JSON.stringify(customStickers));
+        } catch(e) {}
+        sendImageSticker(dataUrl, f.type);
+      };
       reader.onerror = function(){ toast("Gagal membaca gambar."); };
       reader.readAsDataURL(f);
     };
     uploadBtn.onclick = function(){ stickerFileInput.click(); };
     panel.appendChild(uploadBtn);
     panel.appendChild(stickerFileInput);
+
+    customStickers.forEach(function(cs){
+      var btn = document.createElement("button");
+      btn.className = "sticker-btn";
+      var img = document.createElement("img");
+      img.src = cs.dataUrl;
+      img.style.width = "48px";
+      img.style.height = "48px";
+      img.style.objectFit = "contain";
+      img.style.borderRadius = "6px";
+      btn.appendChild(img);
+      btn.onclick = function(){
+        sendImageSticker(cs.dataUrl, "image/png");
+        panel.remove();
+        document.removeEventListener("click", closePanelHandler);
+      };
+      panel.appendChild(btn);
+    });
 
     STICKERS.forEach(function(emoji){
       var btn = document.createElement("button");
@@ -2399,9 +2448,7 @@
   }
 
   /* ============== BOOT ============== */
-  // MODIFIKASI: tryAutoLogin langsung ke login, tanpa memeriksa sesi
   async function tryAutoLogin(){
-    // Selalu minta login ulang, tidak auto-login
     state.screen = "login";
     render();
   }
