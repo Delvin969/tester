@@ -262,6 +262,10 @@
 
   /* ---------- AVATAR FOTO ---------- */
   .avatar{overflow:hidden;}
+  .floating-logout{position:fixed;top:14px;right:14px;z-index:130;background:#202c33;color:#ff6b6b;border:1px solid #2a3942;border-radius:20px;padding:8px 14px 8px 10px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.45);}
+  .floating-logout:hover{background:#2a3942;}
+  .floating-logout svg{width:16px;height:16px;fill:#ff6b6b;}
+  @media (max-width:820px){ .floating-logout span{display:none;} .floating-logout{padding:9px;border-radius:50%;} }
   .profile-photo-wrap{position:relative;width:88px;height:88px;margin:0 auto 14px;}
   .profile-photo-wrap .avatar{width:88px;height:88px;font-size:28px;}
   .profile-photo-edit-badge{position:absolute;bottom:0;right:0;width:30px;height:30px;border-radius:50%;background:var(--accent);color:#062b23;display:flex;align-items:center;justify-content:center;border:2px solid #111b21;cursor:pointer;}
@@ -769,6 +773,8 @@
     myPhoto: null,
     photoMap: {},
     tmpPasscode: "",
+    emailCheckStatus: null,
+    emailCheckName: "",
     tmpEmail: "",
     tmpName: "",
     tmpCode: "",
@@ -836,6 +842,7 @@
   }
 
   function renderLogin(){
+    var showFull = state.emailCheckStatus !== "existing";
     root.innerHTML =
     '<div class="login-wrap"><div class="login-card">'+
       '<div class="login-logo">'+ICONS.logo+'</div>'+
@@ -845,14 +852,20 @@
         '<label>Email</label>'+
         '<input id="in-email" type="email" placeholder="nama@email.com" maxlength="80" value="'+escapeHtml(state.tmpEmail||"")+'"/>'+
       '</div>'+
-      '<div class="field">'+
-        '<label>Nama tampilan <span style="color:#5f7178">(khusus akun baru)</span></label>'+
-        '<input id="in-name" type="text" placeholder="Misal: Rani" maxlength="30" value="'+escapeHtml(state.tmpName||"")+'"/>'+
-      '</div>'+
-      '<div class="field">'+
-        '<label>Nomor kamu <span style="color:#5f7178">(khusus akun baru, boleh atur sendiri)</span></label>'+
-        '<input id="in-code" type="text" inputmode="numeric" placeholder="Ketik nomor sendiri, atau klik Buatkan Nomor" maxlength="15" style="letter-spacing:1px" value="'+escapeHtml(state.tmpCode||"")+'"/>'+
-      '</div>'+
+      (state.emailCheckStatus === "existing"
+        ? '<div class="info-msg" style="margin-bottom:16px;">Akun ditemukan'+(state.emailCheckName?': <b>'+escapeHtml(state.emailCheckName)+'</b>':"")+'. Tinggal masukkan kode masuk kamu.</div>'
+        : ''
+      )+
+      (showFull ? (
+        '<div class="field">'+
+          '<label>Nama tampilan <span style="color:#5f7178">(khusus akun baru)</span></label>'+
+          '<input id="in-name" type="text" placeholder="Misal: Rani" maxlength="30" value="'+escapeHtml(state.tmpName||"")+'"/>'+
+        '</div>'+
+        '<div class="field">'+
+          '<label>Nomor kamu <span style="color:#5f7178">(khusus akun baru, boleh atur sendiri)</span></label>'+
+          '<input id="in-code" type="text" inputmode="numeric" placeholder="Ketik nomor sendiri, atau klik Buatkan Nomor" maxlength="15" style="letter-spacing:1px" value="'+escapeHtml(state.tmpCode||"")+'"/>'+
+        '</div>'
+      ) : '')+
       '<div class="field">'+
         '<label>Kode Masuk <span style="color:#5f7178">(seperti password, bebas kamu tentukan sendiri)</span></label>'+
         '<input id="in-passcode" type="password" placeholder="Buat/masukkan kode masuk kamu" maxlength="40" value="'+escapeHtml(state.tmpPasscode||"")+'"/>'+
@@ -860,7 +873,7 @@
       (state.loginError ? '<div class="err-msg">'+escapeHtml(state.loginError)+'</div>' : '')+
       (state.loginInfo ? '<div class="info-msg">'+escapeHtml(state.loginInfo)+'</div>' : '')+
       '<div class="login-actions">'+
-        '<button class="btn btn-secondary" id="btn-random" '+(state.loginBusy?'disabled':'')+'>Buatkan Nomor</button>'+
+        (showFull ? '<button class="btn btn-secondary" id="btn-random" '+(state.loginBusy?'disabled':'')+'>Buatkan Nomor</button>' : '')+
         '<button class="btn btn-primary" id="btn-login" '+(state.loginBusy?'disabled':'')+'>Masuk</button>'+
       '</div>'+
       (state.loginBusy ? '<div class="loading-line">Menghubungkan&hellip;</div>' : '')+
@@ -878,22 +891,77 @@
       ) : '')+
     '</div></div>';
 
-    document.getElementById("btn-random").onclick = onGenerateCode;
+    var randomBtn = document.getElementById("btn-random");
+    if(randomBtn) randomBtn.onclick = onGenerateCode;
     document.getElementById("btn-login").onclick = onLogin;
-    document.getElementById("in-email").oninput = function(e){ state.tmpEmail = e.target.value; };
-    document.getElementById("in-name").oninput = function(e){ state.tmpName = e.target.value; };
-    document.getElementById("in-code").oninput = function(e){ state.tmpCode = e.target.value; };
-    document.getElementById("in-passcode").oninput = function(e){ state.tmpPasscode = e.target.value; };
-    document.getElementById("in-email").onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
-    document.getElementById("in-code").onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
-    document.getElementById("in-name").onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
-    document.getElementById("in-passcode").onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
+    var emailInput = document.getElementById("in-email");
+    emailInput.oninput = function(e){ state.tmpEmail = e.target.value; scheduleEmailCheck(); };
+    emailInput.onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
+    var nameInput = document.getElementById("in-name");
+    if(nameInput){
+      nameInput.oninput = function(e){ state.tmpName = e.target.value; };
+      nameInput.onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
+    }
+    var codeInput = document.getElementById("in-code");
+    if(codeInput){
+      codeInput.oninput = function(e){ state.tmpCode = e.target.value; };
+      codeInput.onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
+    }
+    var passInput = document.getElementById("in-passcode");
+    passInput.oninput = function(e){ state.tmpPasscode = e.target.value; };
+    passInput.onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
     var createBlobBtn = document.getElementById("btn-create-blob");
     if(createBlobBtn) createBlobBtn.onclick = function(){
       createBlobBtn.disabled = true;
       createBlobBtn.textContent = "Membuat...";
       createSharedBucket();
     };
+  }
+
+  var emailCheckTimer = null;
+
+  function rerenderLoginKeepFocus(){
+    var active = document.activeElement;
+    var activeId = active ? active.id : null;
+    var selStart = null, selEnd = null;
+    if(active && typeof active.selectionStart === "number"){ selStart = active.selectionStart; selEnd = active.selectionEnd; }
+    renderLogin();
+    if(activeId){
+      var el = document.getElementById(activeId);
+      if(el){
+        el.focus();
+        if(selStart !== null && el.setSelectionRange){
+          try{ el.setSelectionRange(selStart, selEnd); }catch(e){}
+        }
+      }
+    }
+  }
+
+  function scheduleEmailCheck(){
+    clearTimeout(emailCheckTimer);
+    var email = normEmail(state.tmpEmail);
+    if(!email || !isValidEmail(email)){
+      if(state.emailCheckStatus !== null){
+        state.emailCheckStatus = null;
+        state.emailCheckName = "";
+        rerenderLoginKeepFocus();
+      }
+      return;
+    }
+    emailCheckTimer = setTimeout(async function(){
+      var ptr = await storeGet(kUserByEmail(email));
+      if(state.screen !== "login") return; // sudah pindah layar (mis. berhasil login/daftar), abaikan hasil basi ini
+      if(normEmail(state.tmpEmail) !== email) return; // email sudah berubah lagi selagi menunggu
+      if(ptr && ptr.nomor){
+        var profile = await storeGet(kUser(ptr.nomor));
+        state.emailCheckStatus = "existing";
+        state.emailCheckName = profile ? profile.name : "";
+      } else {
+        state.emailCheckStatus = "new";
+        state.emailCheckName = "";
+      }
+      rerenderLoginKeepFocus();
+    }, 600);
   }
 
   async function onGenerateCode(){
@@ -918,11 +986,15 @@
   }
 
   async function onLogin(){
+    clearTimeout(emailCheckTimer);
     state.loginError = ""; state.loginInfo = "";
     var email = normEmail(state.tmpEmail);
     var name = (state.tmpName||"").trim();
     var nomor = normCode(state.tmpCode);
+    var passcode = (state.tmpPasscode||"").trim();
     if(!email || !isValidEmail(email)){ state.loginError = "Masukkan email yang valid."; render(); return; }
+    if(!passcode){ state.loginError = "Isi kode masuk kamu dulu (bebas, seperti password)."; render(); return; }
+    if(passcode.length < 4){ state.loginError = "Kode masuk minimal 4 karakter."; render(); return; }
     state.loginBusy = true; render();
 
     var emailPtr = await storeGet(kUserByEmail(email));
@@ -930,6 +1002,17 @@
 
     if(emailPtr && emailPtr.nomor){
       var profile = await storeGet(kUser(emailPtr.nomor));
+      if(!profile){ state.loginBusy=false; state.loginError = "Data akun tidak ditemukan. Coba lagi."; render(); return; }
+      var enteredHash = await sha256Hex(passcode);
+      if(profile.passcodeHash){
+        if(enteredHash !== profile.passcodeHash){
+          state.loginBusy=false; state.loginError = "Kode masuk salah."; render(); return;
+        }
+      } else {
+        // akun lama (dibuat sebelum ada fitur kode masuk) -> simpan kode masuk sekarang
+        profile.passcodeHash = enteredHash;
+        await storeSet(kUser(profile.code), profile);
+      }
       state.myCode = emailPtr.nomor;
       state.myName = (profile && profile.name) ? profile.name : (name || "Pengguna");
     } else {
@@ -939,7 +1022,8 @@
       if(nomor.length > 15){ state.loginBusy=false; state.loginError = "Nomor maksimal 15 digit."; render(); return; }
       var existingNomor = await storeGet(kUser(nomor));
       if(existingNomor){ state.loginBusy=false; state.loginError = "Nomor ini sudah dipakai orang lain, coba nomor lain atau klik \"Buatkan Nomor\"."; render(); return; }
-      var ok1 = await storeSet(kUser(nomor), {code:nomor, name:name, email:email, createdAt:Date.now()});
+      var passcodeHash = await sha256Hex(passcode);
+      var ok1 = await storeSet(kUser(nomor), {code:nomor, name:name, email:email, passcodeHash:passcodeHash, createdAt:Date.now()});
       var ok2 = await storeSet(kUserByEmail(email), {email:email, nomor:nomor});
       if(!ok1 || !ok2){ state.loginBusy=false; state.loginError="Gagal menyimpan akun. Coba lagi."; render(); return; }
       state.myCode = nomor;
@@ -951,6 +1035,7 @@
     await loadUserData();
     saveSession(); // tidak melakukan apa-apa
     state.loginBusy = false;
+    state.tmpPasscode = "";
     state.screen = "app";
     if(isNewAccount){ state.modal = "profile"; }
     render();
@@ -969,11 +1054,17 @@
       if(g) state.groups[g.id] = g;
     }
     var pMap = {};
+    var photoMap = {};
     for(var j=0;j<state.contacts.length;j++){
       var p = await storeGet(kPresence(state.contacts[j].code));
       if(p) pMap[state.contacts[j].code] = p;
+      var contactProfile = await storeGet(kUser(state.contacts[j].code));
+      if(contactProfile && contactProfile.photo) photoMap[state.contacts[j].code] = contactProfile.photo;
     }
     state.presenceMap = pMap;
+    state.photoMap = photoMap;
+    var myProfileFresh = await storeGet(kUser(state.myCode));
+    state.myPhoto = (myProfileFresh && myProfileFresh.photo) ? myProfileFresh.photo : null;
     var pinned = await storeGet(kPinned(state.myCode));
     state.pinnedIds = pinned || [];
     var items = buildChatListItems();
@@ -1048,6 +1139,13 @@
     if(nearBottom) box.scrollTop = box.scrollHeight;
   }
 
+  function doLogout(){
+    if(!confirm("Keluar dari akun ini? Kamu perlu login lagi nanti.")) return;
+    clearSession();
+    if(state.pollHandle) clearInterval(state.pollHandle);
+    location.reload();
+  }
+
   /* ---------- App shell ---------- */
   function renderApp(){
     var appClass = "app" + (state.activeChat ? " chat-open" : "");
@@ -1057,6 +1155,13 @@
     appEl.appendChild(buildMain());
     if(state.modal) appEl.appendChild(buildModal());
     if(state.viewingStatus) appEl.appendChild(buildStatusViewerOverlay());
+
+    var logoutFab = document.createElement("button");
+    logoutFab.className = "floating-logout";
+    logoutFab.title = "Keluar dari akun";
+    logoutFab.innerHTML = ICONS.logout+'<span>Keluar</span>';
+    logoutFab.onclick = doLogout;
+    appEl.appendChild(logoutFab);
   }
 
   function buildSidebar(){
@@ -1066,12 +1171,11 @@
     var header = document.createElement("div");
     header.className = "sidebar-header";
     header.innerHTML =
-      '<div class="avatar sm" id="my-avatar" style="background:'+colorFor(state.myCode)+';cursor:pointer" title="'+escapeHtml(state.myName)+' — Nomor: '+escapeHtml(state.myCode)+'">'+initials(state.myName)+'</div>'+
+      '<div class="avatar sm" id="my-avatar" style="background:'+avatarBg(state.myCode,state.myName)+';cursor:pointer" title="'+escapeHtml(state.myName)+' — Nomor: '+escapeHtml(state.myCode)+'">'+avatarInner(state.myCode,state.myName)+'</div>'+
       '<div class="header-icons">'+
         '<button class="icon-btn" id="ic-newchat" title="Tambah kontak">'+ICONS.newchat+'</button>'+
         '<button class="icon-btn" id="ic-group" title="Buat grup">'+ICONS.group+'</button>'+
         '<button class="icon-btn" id="ic-profile" title="Profil &amp; nomor saya">'+ICONS.dots+'</button>'+
-        '<button class="icon-btn" id="ic-logout" title="Keluar" style="color:#ff6b6b;">'+ICONS.logout+'</button>'+
       '</div>';
     el.appendChild(header);
 
@@ -1131,7 +1235,7 @@
         var row = document.createElement("div");
         row.className = "chat-item" + (state.activeChat && state.activeChat.id===it.id ? " active" : "") + (isPinned ? " pinned-item" : "");
         row.innerHTML =
-          '<div class="avatar md" style="background:'+colorFor(it.code||it.groupId)+'">'+initials(it.title)+(isOnline?'<span class="online-dot"></span>':'')+'</div>'+
+          chatItemAvatarHtml(it, "md", isOnline)+
           '<div class="chat-item-body">'+
             '<div class="chat-item-top"><span class="chat-item-name">'+escapeHtml(it.title)+'</span>'+
               '<span class="chat-item-time-wrap"><button class="pin-btn'+(isPinned?' pinned':'')+'" data-pin-id="'+escapeHtml(it.id)+'" title="'+(isPinned?"Lepas pin":"Pin obrolan")+'">'+ICONS.pin+'</button>'+(isUnread?'<span class="unread-dot"></span>':'')+(last ? '<span class="chat-item-time">'+fmtTime(last.ts)+'</span>' : '')+'</span>'+
@@ -1154,13 +1258,6 @@
       var pf = document.getElementById("ic-profile"); if(pf) pf.onclick = function(){ openModal("profile"); };
       var myAv = document.getElementById("my-avatar"); if(myAv) myAv.onclick = function(){ openModal("profile"); };
       var eac = document.getElementById("empty-add-contact"); if(eac) eac.onclick = function(){ openModal("addContact"); };
-      var lg = document.getElementById("ic-logout");
-      if(lg) lg.onclick = function(){
-        if(!confirm("Keluar dari akun ini? Kamu perlu login lagi nanti.")) return;
-        clearSession();
-        if(state.pollHandle) clearInterval(state.pollHandle);
-        location.reload();
-      };
     },0);
 
     return el;
@@ -1190,7 +1287,7 @@
     var hasMy = state.myStatuses.length > 0;
     myRow.innerHTML =
       '<div class="status-avatar-wrap">'+
-        '<div class="status-ring'+(hasMy?"":"")+'"><div class="avatar md" style="background:'+colorFor(state.myCode)+'">'+initials(state.myName)+'</div></div>'+
+        '<div class="status-ring'+(hasMy?"":"")+'"><div class="avatar md" style="background:'+avatarBg(state.myCode,state.myName)+'">'+avatarInner(state.myCode,state.myName)+'</div></div>'+
         '<div class="status-add-badge" id="st-add-badge">'+ICONS.plus+'</div>'+
       '</div>'+
       '<div class="chat-item-body">'+
@@ -1220,7 +1317,7 @@
         var row = document.createElement("div");
         row.className = "status-row";
         row.innerHTML =
-          '<div class="status-avatar-wrap"><div class="status-ring'+(unseen?" unseen":"")+'"><div class="avatar md" style="background:'+colorFor(code)+'">'+initials(c.name)+'</div></div></div>'+
+          '<div class="status-avatar-wrap"><div class="status-ring'+(unseen?" unseen":"")+'"><div class="avatar md" style="background:'+avatarBg(code,c.name)+'">'+avatarInner(code,c.name)+'</div></div></div>'+
           '<div class="chat-item-body">'+
             '<div class="chat-item-name">'+escapeHtml(c.name)+'</div>'+
             '<div class="chat-item-preview">'+fmtTime(list[list.length-1].ts)+'</div>'+
@@ -1289,7 +1386,7 @@
     card.innerHTML =
       '<div class="status-progress">'+segs+'</div>'+
       '<div class="status-viewer-header">'+
-        '<div class="avatar sm" style="background:'+colorFor(v.ownerCode)+'">'+initials(v.ownerName)+'</div>'+
+        '<div class="avatar sm" style="background:'+avatarBg(v.ownerCode,v.ownerName)+'">'+avatarInner(v.ownerCode,v.ownerName)+'</div>'+
         '<div class="who"><b>'+escapeHtml(v.ownerName)+'</b><span>'+fmtTime(item.ts)+'</span></div>'+
         '<button id="st-close">'+ICONS.close+'</button>'+
       '</div>'+
@@ -1610,7 +1707,7 @@
       }
       header.innerHTML =
         '<button class="icon-btn back-btn" id="btn-back">&#8592;</button>'+
-        '<div class="avatar sm" style="background:'+colorFor(state.activeChat.code||state.activeChat.groupId)+'">'+initials(state.activeChat.title)+'</div>'+
+        chatItemAvatarHtml(state.activeChat, "sm", false)+
         '<div class="chat-header-info">'+
           '<div class="chat-header-name">'+escapeHtml(state.activeChat.title)+'</div>'+
           '<div class="chat-header-sub">'+escapeHtml(state.activeChat.sub||"")+'</div>'+
@@ -1677,7 +1774,7 @@
       mentionList.className = "mention-list";
       mentionList.innerHTML = mentionCandidates.map(function(c){
         return '<div class="mention-item" data-name="'+escapeHtml(c.name)+'">'+
-          '<div class="avatar sm" style="width:28px;height:28px;font-size:12px;background:'+colorFor(c.code)+'">'+initials(c.name)+'</div>'+
+          '<div class="avatar sm" style="width:28px;height:28px;font-size:12px;background:'+avatarBg(c.code,c.name)+'">'+avatarInner(c.code,c.name)+'</div>'+
           '<span>'+escapeHtml(c.name)+'</span></div>';
       }).join("");
       el.appendChild(mentionList);
@@ -2075,7 +2172,7 @@
       var rows = state.contacts.map(function(c){
         var checked = state.groupPicked[c.code] ? "checked" : "";
         return '<label class="contact-pick-row"><input type="checkbox" data-code="'+escapeHtml(c.code)+'" class="grp-pick" '+checked+'/>'+
-          '<div class="avatar sm" style="background:'+colorFor(c.code)+'">'+initials(c.name)+'</div><div>'+escapeHtml(c.name)+' <span style="color:#8696a0;font-size:12px">#'+escapeHtml(c.code)+'</span></div></label>';
+          '<div class="avatar sm" style="background:'+avatarBg(c.code,c.name)+'">'+avatarInner(c.code,c.name)+'</div><div>'+escapeHtml(c.name)+' <span style="color:#8696a0;font-size:12px">#'+escapeHtml(c.code)+'</span></div></label>';
       }).join("");
       modal.innerHTML =
         '<div class="modal-header"><span>Grup Baru</span><button id="m-close">'+ICONS.close+'</button></div>'+
@@ -2090,9 +2187,14 @@
       modal.innerHTML =
         '<div class="modal-header"><span>Profil Saya</span><button id="m-close">'+ICONS.close+'</button></div>'+
         '<div class="modal-body" style="text-align:center;">'+
-          '<div class="avatar lg" style="margin:0 auto 14px;background:'+colorFor(state.myCode)+'">'+initials(state.myName)+'</div>'+
+          '<div class="profile-photo-wrap">'+
+            '<div class="avatar lg" style="width:88px;height:88px;font-size:28px;background:'+avatarBg(state.myCode,state.myName)+'">'+avatarInner(state.myCode,state.myName)+'</div>'+
+            '<div class="profile-photo-edit-badge" id="btn-change-photo" title="Ganti foto profil">'+ICONS.camera+'</div>'+
+          '</div>'+
+          '<input id="photo-input" type="file" accept="image/*" style="display:none"/>'+
+          (state.myPhoto ? '<div style="margin-bottom:10px;"><button class="link-btn" id="btn-remove-photo">Hapus foto profil</button></div>' : '')+
           '<div style="font-size:17px;font-weight:600;margin-bottom:4px;">'+escapeHtml(state.myName)+'</div>'+
-          '<div class="muted-note" style="margin-bottom:14px;">Nomor ini fungsinya seperti nomor telepon di WhatsApp asli — simpan baik-baik, dan bagikan ke orang lain supaya mereka bisa menambahkanmu sebagai kontak. Login berikutnya cukup pakai email kamu.</div>'+
+          '<div class="muted-note" style="margin-bottom:14px;">Nomor ini fungsinya seperti nomor telepon di WhatsApp asli — simpan baik-baik, dan bagikan ke orang lain supaya mereka bisa menambahkanmu sebagai kontak. Login berikutnya pakai email + kode masuk kamu.</div>'+
           '<div class="copy-row"><div class="code-generated">'+escapeHtml(state.myCode)+'</div><button class="btn btn-secondary" id="m-copy">Salin</button></div>'+
         '</div>'+
         '<div class="modal-footer"><button class="btn btn-secondary" id="m-logout">Keluar</button><button class="btn btn-primary" id="m-cancel">Tutup</button></div>';
@@ -2126,7 +2228,7 @@
       var rows2 = candidates.map(function(c){
         var checked = state.groupPicked[c.code] ? "checked" : "";
         return '<label class="contact-pick-row"><input type="checkbox" data-code="'+escapeHtml(c.code)+'" class="grp-pick" '+checked+'/>'+
-          '<div class="avatar sm" style="background:'+colorFor(c.code)+'">'+initials(c.name)+'</div><div>'+escapeHtml(c.name)+' <span style="color:#8696a0;font-size:12px">#'+escapeHtml(c.code)+'</span></div></label>';
+          '<div class="avatar sm" style="background:'+avatarBg(c.code,c.name)+'">'+avatarInner(c.code,c.name)+'</div><div>'+escapeHtml(c.name)+' <span style="color:#8696a0;font-size:12px">#'+escapeHtml(c.code)+'</span></div></label>';
       }).join("");
       modal.innerHTML =
         '<div class="modal-header"><span>Tambah Anggota</span><button id="m-close">'+ICONS.close+'</button></div>'+
@@ -2166,12 +2268,21 @@
           }catch(e){ toast("Tidak bisa menyalin otomatis, salin manual ya."); }
         };
         var logoutBtn = document.getElementById("m-logout");
-        if(logoutBtn) logoutBtn.onclick = function(){
-          if(!confirm("Keluar dari akun ini? Kamu perlu login lagi nanti.")) return;
-          clearSession();
-          if(state.pollHandle) clearInterval(state.pollHandle);
-          location.reload();
+        if(logoutBtn) logoutBtn.onclick = doLogout;
+        var photoInput = document.getElementById("photo-input");
+        var changePhotoBtn = document.getElementById("btn-change-photo");
+        if(changePhotoBtn) changePhotoBtn.onclick = function(){ photoInput.click(); };
+        if(photoInput) photoInput.onchange = function(e){
+          var f = e.target.files && e.target.files[0];
+          if(!f) return;
+          if(!/^image\//.test(f.type)){ toast("File harus berupa gambar."); return; }
+          resizeImageToDataUrl(f, 300, "image/jpeg", 0.85, true, function(dataUrl){
+            if(!dataUrl){ toast("Gagal memproses foto."); return; }
+            saveProfilePhoto(dataUrl);
+          });
         };
+        var removePhotoBtn = document.getElementById("btn-remove-photo");
+        if(removePhotoBtn) removePhotoBtn.onclick = function(){ saveProfilePhoto(null); };
       } else if(state.modal === "newStatus"){
         var stText = document.getElementById("st-text");
         var stPreview = document.getElementById("st-preview");
@@ -2203,6 +2314,17 @@
     },0);
 
     return overlay;
+  }
+
+  async function saveProfilePhoto(dataUrlOrNull){
+    var profile = await storeGet(kUser(state.myCode));
+    if(!profile){ toast("Gagal memuat profil kamu."); return; }
+    profile.photo = dataUrlOrNull || null;
+    var ok = await storeSet(kUser(state.myCode), profile);
+    if(!ok){ toast("Gagal menyimpan foto. Coba lagi."); return; }
+    state.myPhoto = dataUrlOrNull || null;
+    renderApp();
+    toast(dataUrlOrNull ? "Foto profil diperbarui." : "Foto profil dihapus.");
   }
 
   async function saveAddContact(){
