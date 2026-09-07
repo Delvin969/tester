@@ -60,6 +60,7 @@
   .btn:hover:not(:disabled){filter:brightness(1.08);}
   .btn-primary{background:var(--accent);color:#062b23;flex:1;}
   .btn-secondary{background:#2a3942;color:var(--text-main);}
+  .hint-row{margin-top:14px;font-size:13px;color:var(--text-muted);}
   .code-generated{
     font-family:"Courier New",monospace;font-size:20px;letter-spacing:3px;font-weight:700;
     background:#1f2c34;border-radius:8px;padding:10px;margin:10px 0 0;color:var(--online);
@@ -74,7 +75,6 @@
   .sidebar{width:400px;min-width:320px;max-width:40%;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--bg-sidebar);}
   .sidebar-header{height:60px;background:var(--bg-header);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0;}
   .avatar{border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0;user-select:none;position:relative;overflow:hidden;}
-  .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
   .avatar.sm{width:40px;height:40px;font-size:15px;}
   .avatar.md{width:49px;height:49px;font-size:17px;}
   .avatar.lg{width:72px;height:72px;font-size:24px;}
@@ -129,7 +129,6 @@
   .bubble.out{background:var(--bubble-out);border-top-right-radius:0;}
   .bubble .sender-tag{font-size:12.5px;font-weight:600;color:#6bd6c5;margin-bottom:2px;display:block;}
   .bubble .msg-text{white-space:pre-wrap;word-break:break-word;color:var(--text-main);}
-  .bubble .mention-highlight{color:#53bdeb;font-weight:600;}
   .bubble.bubble-file{padding:6px;}
   .file-image{max-width:240px;max-height:280px;border-radius:6px;display:block;cursor:pointer;}
   .file-chip{display:flex;align-items:center;gap:8px;background:#ffffff10;padding:9px 11px;border-radius:8px;text-decoration:none;color:var(--text-main);min-width:160px;}
@@ -139,6 +138,14 @@
   .file-chip-name{font-size:13.5px;word-break:break-word;}
   .bubble .msg-meta{display:flex;justify-content:flex-end;gap:4px;margin-top:2px;font-size:10.5px;color:#8696a0;align-items:center;}
   .day-divider{align-self:center;background:#182229;color:#8fa3ad;font-size:12px;padding:5px 12px;border-radius:8px;margin:10px 0;}
+  .msg-image{max-width:260px;max-height:320px;border-radius:6px;display:block;cursor:pointer;margin-bottom:2px;}
+  .msg-file-card{display:flex;align-items:center;gap:10px;background:#0b141a55;border-radius:6px;padding:8px 10px;margin-bottom:2px;min-width:180px;}
+  .msg-file-card .file-ic{width:34px;height:34px;border-radius:6px;background:#00a88433;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .msg-file-card .file-ic svg{width:18px;height:18px;fill:var(--accent);}
+  .msg-file-card .file-info{min-width:0;flex:1;}
+  .msg-file-card .file-name{font-size:13.5px;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;}
+  .msg-file-card .file-size{font-size:11.5px;color:var(--text-muted);}
+  .msg-file-card a{color:var(--accent);font-size:12.5px;font-weight:600;text-decoration:none;flex-shrink:0;}
 
   .chat-input-bar{background:var(--bg-header);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
   .chat-input-bar input{flex:1;border:none;border-radius:20px;padding:11px 16px;font-size:14.5px;outline:none;background:var(--bg-input);color:var(--text-main);}
@@ -147,98 +154,6 @@
   .send-btn{background:transparent;border:none;cursor:pointer;color:#aebac1;display:flex;}
   .send-btn:disabled{opacity:.4;cursor:not-allowed;}
   .send-btn svg{width:24px;height:24px;fill:currentColor;}
-
-  /* ---------- MENTION DROPDOWN ---------- */
-  .mention-dropdown {
-    position: fixed;
-    bottom: 75px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #233138;
-    border-radius: 12px;
-    padding: 6px 0;
-    z-index: 200;
-    box-shadow: 0 4px 16px rgba(0,0,0,.5);
-    max-height: 250px;
-    overflow-y: auto;
-    min-width: 220px;
-  }
-  .mention-item {
-    padding: 10px 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 14px;
-    color: var(--text-main);
-  }
-  .mention-item:hover {
-    background: var(--bg-panel-hover);
-  }
-
-  /* ---------- PROFILE PHOTO ---------- */
-  .profile-photo-wrap {
-    position: relative;
-    width: 88px;
-    height: 88px;
-    margin: 0 auto 14px;
-  }
-  .profile-photo-wrap .avatar {
-    width: 88px;
-    height: 88px;
-    font-size: 28px;
-  }
-  .profile-photo-edit-badge {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: var(--accent);
-    color: #062b23;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #111b21;
-    cursor: pointer;
-  }
-  .profile-photo-edit-badge svg {
-    width: 15px;
-    height: 15px;
-    fill: #062b23;
-  }
-
-  /* ---------- EMOJI & STICKER PANELS ---------- */
-  .emoji-panel,
-  .sticker-panel {
-    position: fixed;
-    bottom: 75px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #233138;
-    border-radius: 12px;
-    padding: 12px;
-    display: grid;
-    gap: 4px;
-    z-index: 200;
-    box-shadow: 0 4px 16px rgba(0,0,0,.5);
-    max-height: 320px;
-    overflow-y: auto;
-  }
-  .emoji-panel { grid-template-columns: repeat(8, 1fr); }
-  .sticker-panel { grid-template-columns: repeat(4, 1fr); }
-  .emoji-btn, .sticker-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 24px;
-    padding: 6px;
-    border-radius: 6px;
-    transition: background .1s;
-  }
-  .emoji-btn:hover, .sticker-btn:hover { background: rgba(255,255,255,0.1); }
-  .sticker-btn { font-size: 48px; }
 
   /* ---------- MODALS ---------- */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50;}
@@ -263,6 +178,12 @@
   ::-webkit-scrollbar{width:8px;}
   ::-webkit-scrollbar-thumb{background:#2a3942;border-radius:4px;}
 
+  /* ---------- SIDEBAR TABS ---------- */
+  .sidebar-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .tab-btn{flex:1;background:none;border:none;color:var(--text-muted);padding:10px 0;font-size:13.5px;cursor:pointer;border-bottom:3px solid transparent;}
+  .tab-btn:hover{background:var(--bg-panel-hover);}
+  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+
   /* ---------- REPLY ---------- */
   .bubble{position:relative;}
   .msg-actions{position:absolute;top:2px;display:none;gap:1px;background:#0b141acc;border-radius:14px;padding:2px;}
@@ -281,12 +202,104 @@
   .reply-bar button{background:none;border:none;color:var(--text-muted);cursor:pointer;}
   .reply-bar button svg{width:18px;height:18px;fill:currentColor;}
 
-  /* ---------- HEADER MENU ---------- */
+  /* ---------- HEADER MENU (dots) ---------- */
   .header-menu-wrap{position:relative;}
   .header-menu{position:absolute;top:46px;right:0;background:#233138;border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,.5);min-width:210px;z-index:60;overflow:hidden;}
   .header-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text-main);padding:12px 16px;font-size:14px;cursor:pointer;}
   .header-menu button:hover{background:var(--bg-panel-hover);}
   .header-menu button.danger{color:#ff6b6b;}
+
+  /* ---------- STATUS ---------- */
+  .status-row{display:flex;align-items:center;gap:14px;padding:12px 16px;cursor:pointer;}
+  .status-row:hover{background:var(--bg-panel-hover);}
+  .status-avatar-wrap{position:relative;flex-shrink:0;}
+  .status-ring{border-radius:50%;padding:2px;border:2.5px solid #3a4a53;display:flex;}
+  .status-ring.unseen{border-color:var(--accent);}
+  .status-add-badge{position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#062b23;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;border:2px solid var(--bg-sidebar);line-height:1;}
+  .status-section-title{padding:12px 16px 4px;font-size:13px;color:var(--accent);font-weight:600;}
+  .status-overlay{position:fixed;inset:0;background:#000;z-index:200;display:flex;align-items:center;justify-content:center;}
+  .status-card{width:420px;max-width:100vw;height:100%;max-height:100vh;display:flex;flex-direction:column;position:relative;}
+  .status-progress{display:flex;gap:4px;padding:10px 10px 0;}
+  .status-progress .seg{flex:1;height:3px;background:#ffffff40;border-radius:2px;overflow:hidden;}
+  .status-progress .seg.filled{background:#fff;}
+  .status-viewer-header{display:flex;align-items:center;gap:10px;padding:10px 14px;color:#fff;}
+  .status-viewer-header .who{flex:1;min-width:0;}
+  .status-viewer-header .who b{display:block;font-size:14.5px;}
+  .status-viewer-header .who span{font-size:12px;color:#d1d7da;}
+  .status-viewer-header button{background:none;border:none;color:#fff;cursor:pointer;}
+  .status-viewer-header button svg{width:20px;height:20px;fill:#fff;}
+  .status-content{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:36px;font-size:26px;font-weight:600;color:#fff;word-break:break-word;line-height:1.4;}
+  .status-nav-zone{position:absolute;top:60px;bottom:0;width:35%;cursor:pointer;}
+  .status-nav-zone.left{left:0;} .status-nav-zone.right{right:0;}
+  .status-empty{padding:30px 24px;text-align:center;color:var(--text-muted);font-size:13px;}
+  .color-swatch-row{display:flex;gap:8px;margin:12px 0 4px;flex-wrap:wrap;}
+  .color-swatch{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid transparent;}
+  .color-swatch.selected{border-color:#fff;box-shadow:0 0 0 2px var(--accent);}
+  .status-text-preview{border-radius:10px;padding:30px 16px;text-align:center;color:#fff;font-size:19px;font-weight:600;margin-top:6px;min-height:110px;display:flex;align-items:center;justify-content:center;word-break:break-word;}
+  .status-textarea{width:100%;background:#1f2c34;border:1px solid #2a3942;border-radius:8px;color:var(--text-main);padding:10px 12px;font-size:14.5px;resize:vertical;min-height:70px;outline:none;font-family:inherit;}
+  .status-textarea:focus{border-color:var(--accent);}
+
+  /* ---------- NOTES (CATATAN) ---------- */
+  .notes-toolbar{padding:10px 16px;flex-shrink:0;}
+  .note-row{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid #ffffff08;}
+  .note-row:hover{background:var(--bg-panel-hover);}
+  .note-text{flex:1;font-size:13.5px;color:var(--text-main);white-space:pre-wrap;word-break:break-word;}
+  .note-time{font-size:11px;color:var(--text-muted);margin-top:4px;}
+  .note-actions{display:flex;gap:2px;flex-shrink:0;}
+
+  /* ---------- AVATAR FOTO ---------- */
+  .avatar{overflow:hidden;}
+  .profile-photo-wrap{position:relative;width:88px;height:88px;margin:0 auto 14px;}
+  .profile-photo-wrap .avatar{width:88px;height:88px;font-size:28px;}
+  .profile-photo-edit-badge{position:absolute;bottom:0;right:0;width:30px;height:30px;border-radius:50%;background:var(--accent);color:#062b23;display:flex;align-items:center;justify-content:center;border:2px solid #111b21;cursor:pointer;}
+  .profile-photo-edit-badge svg{width:15px;height:15px;fill:#062b23;}
+  .link-btn{background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;padding:0;}
+
+  /* ---------- STICKER ---------- */
+  .bubble.sticker-bubble{background:transparent!important;box-shadow:none;padding:0;}
+  .sticker-img{font-size:80px;line-height:1;display:block;}
+  .sticker-bubble .msg-meta{background:#0b141a99;border-radius:8px;padding:1px 5px;position:absolute;bottom:4px;right:4px;margin:0;}
+
+  /* ---------- EMOJI PANEL & STICKER PANEL ---------- */
+  .emoji-panel,
+  .sticker-panel {
+    position: fixed;
+    bottom: 75px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #233138;
+    border-radius: 12px;
+    padding: 12px;
+    display: grid;
+    gap: 4px;
+    z-index: 200;
+    box-shadow: 0 4px 16px rgba(0,0,0,.5);
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .emoji-panel {
+    grid-template-columns: repeat(8, 1fr);
+  }
+  .sticker-panel {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .emoji-btn,
+  .sticker-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    padding: 6px;
+    border-radius: 6px;
+    transition: background .1s;
+  }
+  .emoji-btn:hover,
+  .sticker-btn:hover {
+    background: rgba(255,255,255,0.1);
+  }
+  .sticker-btn {
+    font-size: 48px;
+  }
 
   @media (max-width:820px){
     .sidebar{width:100%;max-width:none;}
@@ -310,7 +323,6 @@
   var SESSION_KEY = "waclone_v2_session";
   var POLL_MS = 3000;
   var ONLINE_WINDOW_MS = 10000;
-  var MAX_FILE_BYTES = 700 * 1024;
 
   /* ============== ICONS ============== */
   var ICONS = {
@@ -332,8 +344,12 @@
     reply:'<svg viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>',
     trash:'<svg viewBox="0 0 24 24"><path d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2zM9 10v8m3-8v8m3-8v8" style="fill:none;stroke:currentColor;stroke-width:1.6" /></svg>',
     plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round"/></svg>',
-    sticker:'<svg viewBox="0 0 24 24"><path d="M5 3h10l6 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm9 1.5V9a1 1 0 0 0 1 1h4.5L14 4.5zM8.5 13a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zm7 0a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zM8 17.3c1.1.9 2.4 1.4 4 1.4s2.9-.5 4-1.4"/></svg>',
+    pencil:'<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
+    addUser:'<svg viewBox="0 0 24 24"><path d="M15 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-9 8v-1c0-2.66 3.13-4.5 6.5-4.5.62 0 1.22.06 1.79.17A5.98 5.98 0 0 0 12 18v2H6zM19 10h-2v2h-2v2h2v2h2v-2h2v-2h-2z"/></svg>',
+    status:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 2a8 8 0 1 1-8 8 8 8 0 0 1 8-8zm-1 3v6l5 3 1-1.6-4-2.4V7z"/></svg>',
+    notebook:'<svg viewBox="0 0 24 24"><path d="M6 2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm1 4v2h9V6H7zm0 4v2h9v-2H7zm0 4v2h6v-2H7z"/></svg>',
     camera:'<svg viewBox="0 0 24 24"><path d="M9 3l-1.8 2H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>',
+    sticker:'<svg viewBox="0 0 24 24"><path d="M5 3h10l6 6v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm9 1.5V9a1 1 0 0 0 1 1h4.5L14 4.5zM8.5 13a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zm7 0a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4zM8 17.3c1.1.9 2.4 1.4 4 1.4s2.9-.5 4-1.4"/></svg>',
     logout:'<svg viewBox="0 0 24 24" width="21" height="21" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4z"/></svg>'
   };
 
@@ -370,7 +386,6 @@
 
   var backend = null;
   var fbDb = null;
-  var lastKvError = "";
 
   function loadScriptTag(src){
     return new Promise(function(resolve, reject){
@@ -402,6 +417,7 @@
   }
 
   var KV_API = "https://kvdb.io";
+  var lastKvError = "";
   async function tryKvBackend(){
     var bucket = (KV_BUCKET||"").trim();
     if(!bucket) return false;
@@ -596,7 +612,11 @@
   function kGroup(id){ return PFX+"group_"+id; }
   function kChat(id){ return PFX+"chat_"+id; }
   function kPresence(code){ return PFX+"presence_"+code; }
+  function kNotes(code){ return PFX+"notes_"+code; }
+  function kStatus(code){ return PFX+"status_"+code; }
   function dmId(a,b){ return "dm_"+[a,b].sort().join("__"); }
+  var STATUS_TTL_MS = 24*60*60*1000;
+  var STATUS_COLORS = ["#00a884","#7c4dff","#ff9800","#e91e63","#3f9fdb","#ab47bc","#ff7043","#26a69a","#5c6bc0","#d32f2f"];
 
   function randCode(len){
     var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -634,6 +654,19 @@
     if(d.toDateString()===today.toDateString()) return "Hari ini";
     if(d.toDateString()===y.toDateString()) return "Kemarin";
     return d.toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
+  }
+
+  async function sha256Hex(text){
+    try{
+      var enc = new TextEncoder().encode(text);
+      var buf = await crypto.subtle.digest("SHA-256", enc);
+      var arr = Array.from(new Uint8Array(buf));
+      return arr.map(function(b){ return b.toString(16).padStart(2,"0"); }).join("");
+    }catch(e){
+      var h = 0;
+      for(var i=0;i<text.length;i++){ h = (h*31 + text.charCodeAt(i)) >>> 0; }
+      return "fb"+h.toString(16);
+    }
   }
 
   function resizeImageToDataUrl(file, maxDim, mimeType, quality, square, callback){
@@ -676,14 +709,19 @@
     if(photo) return '<img src="'+photo+'" style="width:100%;height:100%;object-fit:cover;display:block;"/>';
     return escapeHtml(initials(name));
   }
+  function chatItemAvatarHtml(it, sizeClass, isOnline){
+    var key = it.code || it.groupId;
+    var photo = it.code ? ((it.code===state.myCode) ? state.myPhoto : state.photoMap[it.code]) : null;
+    var bg = photo ? "transparent" : colorFor(key);
+    var inner = photo ? '<img src="'+photo+'" style="width:100%;height:100%;object-fit:cover;display:block;"/>' : escapeHtml(initials(it.title));
+    return '<div class="avatar '+sizeClass+'" style="background:'+bg+'">'+inner+(isOnline?'<span class="online-dot"></span>':'')+'</div>';
+  }
 
   /* ============== APP STATE ============== */
   var state = {
     screen: "boot",
     myCode: null,
     myName: null,
-    myPhoto: null,
-    photoMap: {},
     contacts: [],
     groupIds: [],
     groups: {},
@@ -699,21 +737,26 @@
     pollHandle: null,
     notifBaselineSet: false,
     modalBusy: false,
+    sidebarTab: "chats",
     replyingTo: null,
     headerMenuOpen: false,
-    mentionDropdown: null,
+    notes: [],
+    myStatuses: [],
+    contactStatusesMap: {},
+    viewingStatus: null,
+    statusTextInput: "",
+    statusColor: STATUS_COLORS[0],
+    noteTextInput: "",
+    editingNoteId: null,
+    myPhoto: null,
+    photoMap: {},
+    tmpPasscode: "",
     tmpEmail: "",
     tmpName: "",
     tmpCode: "",
     generatedBlobId: "",
-    searchQuery: "",
-    modalGroupId: null,
-    pickCode: "",
-    groupNameInput: "",
-    groupPicked: {}
+    searchQuery: ""
   };
-
-  var root = document.getElementById("root");
 
   /* ============== CHECK STATUS & NOTIFIKASI ============== */
   function checkIconFor(m){
@@ -760,6 +803,8 @@
     });
   }
 
+  var root = document.getElementById("root");
+
   /* ============== RENDER ============== */
   function render(){
     if(state.screen === "boot"){
@@ -775,10 +820,23 @@
     '<div class="login-wrap"><div class="login-card">'+
       '<div class="login-logo">'+ICONS.logo+'</div>'+
       '<h1>WhatsApp Web</h1>'+
-      '<p>Masuk pakai email. Kalau email ini baru, isi juga nama & nomor kamu (nomor boleh atur sendiri, seperti nomor WhatsApp asli). Kalau email ini sudah pernah dipakai, cukup isi email lalu klik Masuk &mdash; nama & nomor lama otomatis dipakai.</p>'+
-      '<div class="field"><label>Email</label><input id="in-email" type="email" placeholder="nama@email.com" maxlength="80" value="'+escapeHtml(state.tmpEmail||"")+'"/></div>'+
-      '<div class="field"><label>Nama tampilan <span style="color:#5f7178">(khusus akun baru)</span></label><input id="in-name" type="text" placeholder="Misal: Rani" maxlength="30" value="'+escapeHtml(state.tmpName||"")+'"/></div>'+
-      '<div class="field"><label>Nomor kamu <span style="color:#5f7178">(khusus akun baru, boleh atur sendiri)</span></label><input id="in-code" type="text" inputmode="numeric" placeholder="Ketik nomor sendiri, atau klik Buatkan Nomor" maxlength="15" style="letter-spacing:1px" value="'+escapeHtml(state.tmpCode||"")+'"/></div>'+
+      '<p>Masuk pakai email + kode masuk (seperti password, bebas kamu tentukan). Kalau email ini baru, isi juga nama, nomor, dan buat kode masuk kamu sendiri. Kalau email ini sudah pernah dipakai, isi email dan kode masuk yang sama seperti waktu daftar.</p>'+
+      '<div class="field">'+
+        '<label>Email</label>'+
+        '<input id="in-email" type="email" placeholder="nama@email.com" maxlength="80" value="'+escapeHtml(state.tmpEmail||"")+'"/>'+
+      '</div>'+
+      '<div class="field">'+
+        '<label>Nama tampilan <span style="color:#5f7178">(khusus akun baru)</span></label>'+
+        '<input id="in-name" type="text" placeholder="Misal: Rani" maxlength="30" value="'+escapeHtml(state.tmpName||"")+'"/>'+
+      '</div>'+
+      '<div class="field">'+
+        '<label>Nomor kamu <span style="color:#5f7178">(khusus akun baru, boleh atur sendiri)</span></label>'+
+        '<input id="in-code" type="text" inputmode="numeric" placeholder="Ketik nomor sendiri, atau klik Buatkan Nomor" maxlength="15" style="letter-spacing:1px" value="'+escapeHtml(state.tmpCode||"")+'"/>'+
+      '</div>'+
+      '<div class="field">'+
+        '<label>Kode Masuk <span style="color:#5f7178">(seperti password, bebas kamu tentukan sendiri)</span></label>'+
+        '<input id="in-passcode" type="password" placeholder="Buat/masukkan kode masuk kamu" maxlength="40" value="'+escapeHtml(state.tmpPasscode||"")+'"/>'+
+      '</div>'+
       (state.loginError ? '<div class="err-msg">'+escapeHtml(state.loginError)+'</div>' : '')+
       (state.loginInfo ? '<div class="info-msg">'+escapeHtml(state.loginInfo)+'</div>' : '')+
       '<div class="login-actions">'+
@@ -805,9 +863,11 @@
     document.getElementById("in-email").oninput = function(e){ state.tmpEmail = e.target.value; };
     document.getElementById("in-name").oninput = function(e){ state.tmpName = e.target.value; };
     document.getElementById("in-code").oninput = function(e){ state.tmpCode = e.target.value; };
+    document.getElementById("in-passcode").oninput = function(e){ state.tmpPasscode = e.target.value; };
     document.getElementById("in-email").onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
     document.getElementById("in-code").onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
     document.getElementById("in-name").onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
+    document.getElementById("in-passcode").onkeydown = function(e){ if(e.key==="Enter") onLogin(); };
     var createBlobBtn = document.getElementById("btn-create-blob");
     if(createBlobBtn) createBlobBtn.onclick = function(){
       createBlobBtn.disabled = true;
@@ -829,8 +889,9 @@
     render();
   }
 
+  // MODIFIKASI: saveSession tidak menyimpan apa pun
   function saveSession(){
-    try{ localStorage.setItem(SESSION_KEY, JSON.stringify({code: state.myCode})); }catch(e){}
+    // tidak menyimpan sesi otomatis lagi
   }
   function clearSession(){
     try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
@@ -851,7 +912,6 @@
       var profile = await storeGet(kUser(emailPtr.nomor));
       state.myCode = emailPtr.nomor;
       state.myName = (profile && profile.name) ? profile.name : (name || "Pengguna");
-      state.myPhoto = profile && profile.profilePic ? profile.profilePic : null;
     } else {
       if(!name){ state.loginBusy=false; state.loginError = "Email ini belum terdaftar — isi nama tampilan dulu untuk bikin akun baru."; render(); return; }
       if(!nomor){ state.loginBusy=false; state.loginError = "Isi nomor kamu, atau klik \"Buatkan Nomor\"."; render(); return; }
@@ -864,13 +924,12 @@
       if(!ok1 || !ok2){ state.loginBusy=false; state.loginError="Gagal menyimpan akun. Coba lagi."; render(); return; }
       state.myCode = nomor;
       state.myName = name;
-      state.myPhoto = null;
       isNewAccount = true;
     }
 
     await storeSet(kPresence(state.myCode), Date.now());
     await loadUserData();
-    saveSession();
+    saveSession(); // tidak melakukan apa-apa
     state.loginBusy = false;
     state.screen = "app";
     if(isNewAccount){ state.modal = "profile"; }
@@ -895,17 +954,6 @@
       if(p) pMap[state.contacts[j].code] = p;
     }
     state.presenceMap = pMap;
-    
-    // Load foto profil kontak
-    var photoMap = {};
-    for(var pc = 0; pc < state.contacts.length; pc++){
-      var cProfile = await storeGet(kUser(state.contacts[pc].code));
-      if(cProfile && cProfile.profilePic){
-        photoMap[state.contacts[pc].code] = cProfile.profilePic;
-      }
-    }
-    state.photoMap = photoMap;
-    
     var items = buildChatListItems();
     var lm = {};
     var newIncoming = [];
@@ -927,6 +975,21 @@
     state.lastMsgMap = lm;
     state.notifBaselineSet = true;
     if(newIncoming.length) notifyNewMessages(newIncoming);
+
+    var notes = await storeGet(kNotes(state.myCode));
+    state.notes = (notes || []).slice().sort(function(a,b){ return b.ts - a.ts; });
+
+    var now = Date.now();
+    var myStatusRaw = await storeGet(kStatus(state.myCode));
+    state.myStatuses = (myStatusRaw || []).filter(function(s){ return now - s.ts < STATUS_TTL_MS; });
+    var csMap = {};
+    for(var s=0;s<state.contacts.length;s++){
+      var ccode = state.contacts[s].code;
+      var raw = await storeGet(kStatus(ccode));
+      var active = (raw || []).filter(function(x){ return now - x.ts < STATUS_TTL_MS; });
+      if(active.length) csMap[ccode] = active;
+    }
+    state.contactStatusesMap = csMap;
   }
 
   function startPolling(){
@@ -971,6 +1034,7 @@
     appEl.appendChild(buildSidebar());
     appEl.appendChild(buildMain());
     if(state.modal) appEl.appendChild(buildModal());
+    if(state.viewingStatus) appEl.appendChild(buildStatusViewerOverlay());
   }
 
   function buildSidebar(){
@@ -980,7 +1044,7 @@
     var header = document.createElement("div");
     header.className = "sidebar-header";
     header.innerHTML =
-      '<div class="avatar sm" id="my-avatar" style="background:'+avatarBg(state.myCode, state.myName)+';cursor:pointer" title="'+escapeHtml(state.myName)+' — Nomor: '+escapeHtml(state.myCode)+'">'+avatarInner(state.myCode, state.myName)+'</div>'+
+      '<div class="avatar sm" id="my-avatar" style="background:'+colorFor(state.myCode)+';cursor:pointer" title="'+escapeHtml(state.myName)+' — Nomor: '+escapeHtml(state.myCode)+'">'+initials(state.myName)+'</div>'+
       '<div class="header-icons">'+
         '<button class="icon-btn" id="ic-newchat" title="Tambah kontak">'+ICONS.newchat+'</button>'+
         '<button class="icon-btn" id="ic-group" title="Buat grup">'+ICONS.group+'</button>'+
@@ -988,6 +1052,28 @@
         '<button class="icon-btn" id="ic-logout" title="Keluar" style="color:#ff6b6b;">'+ICONS.logout+'</button>'+
       '</div>';
     el.appendChild(header);
+
+    var tabsEl = document.createElement("div");
+    tabsEl.className = "sidebar-tabs";
+    tabsEl.innerHTML =
+      '<button class="tab-btn'+(state.sidebarTab==="chats"?" active":"")+'" data-tab="chats">Chat</button>'+
+      '<button class="tab-btn'+(state.sidebarTab==="status"?" active":"")+'" data-tab="status">Status</button>'+
+      '<button class="tab-btn'+(state.sidebarTab==="notes"?" active":"")+'" data-tab="notes">Catatan</button>';
+    el.appendChild(tabsEl);
+    setTimeout(function(){
+      tabsEl.querySelectorAll(".tab-btn").forEach(function(b){
+        b.onclick = function(){ state.sidebarTab = b.getAttribute("data-tab"); renderApp(); };
+      });
+    },0);
+
+    if(state.sidebarTab === "status"){
+      el.appendChild(buildStatusList());
+      return el;
+    }
+    if(state.sidebarTab === "notes"){
+      el.appendChild(buildNotesList());
+      return el;
+    }
 
     var search = document.createElement("div");
     search.className = "search-bar";
@@ -1019,7 +1105,7 @@
         var row = document.createElement("div");
         row.className = "chat-item" + (state.activeChat && state.activeChat.id===it.id ? " active" : "");
         row.innerHTML =
-          '<div class="avatar md" style="background:'+avatarBg(it.code, it.title)+'">'+avatarInner(it.code, it.title)+(isOnline?'<span class="online-dot"></span>':'')+'</div>'+
+          '<div class="avatar md" style="background:'+colorFor(it.code||it.groupId)+'">'+initials(it.title)+(isOnline?'<span class="online-dot"></span>':'')+'</div>'+
           '<div class="chat-item-body">'+
             '<div class="chat-item-top"><span class="chat-item-name">'+escapeHtml(it.title)+'</span>'+
               '<span class="chat-item-time-wrap">'+(isUnread?'<span class="unread-dot"></span>':'')+(last ? '<span class="chat-item-time">'+fmtTime(last.ts)+'</span>' : '')+'</span>'+
@@ -1066,12 +1152,227 @@
     return items;
   }
 
+  /* ---------- STATUS ---------- */
+  function buildStatusList(){
+    var wrap = document.createElement("div");
+    wrap.className = "chat-list";
+
+    var myRow = document.createElement("div");
+    myRow.className = "status-row";
+    var hasMy = state.myStatuses.length > 0;
+    myRow.innerHTML =
+      '<div class="status-avatar-wrap">'+
+        '<div class="status-ring'+(hasMy?"":"")+'"><div class="avatar md" style="background:'+colorFor(state.myCode)+'">'+initials(state.myName)+'</div></div>'+
+        '<div class="status-add-badge" id="st-add-badge">'+ICONS.plus+'</div>'+
+      '</div>'+
+      '<div class="chat-item-body">'+
+        '<div class="chat-item-name">Status Saya</div>'+
+        '<div class="chat-item-preview">'+(hasMy ? state.myStatuses.length+" pembaruan &middot; ketuk untuk lihat" : "Ketuk untuk tambah status")+'</div>'+
+      '</div>';
+    myRow.onclick = function(e){
+      if(hasMy && (!e.target.closest || !e.target.closest("#st-add-badge"))){
+        openStatusViewer(state.myCode, state.myName, state.myStatuses, true);
+      } else {
+        openModal("newStatus");
+      }
+    };
+    wrap.appendChild(myRow);
+
+    var contactCodes = Object.keys(state.contactStatusesMap);
+    if(contactCodes.length){
+      var title = document.createElement("div");
+      title.className = "status-section-title";
+      title.textContent = "Pembaruan Terbaru";
+      wrap.appendChild(title);
+      contactCodes.forEach(function(code){
+        var c = state.contacts.filter(function(x){return x.code===code;})[0];
+        if(!c) return;
+        var list = state.contactStatusesMap[code];
+        var unseen = list.some(function(s){ return !(s.viewedBy||[]).includes(state.myCode); });
+        var row = document.createElement("div");
+        row.className = "status-row";
+        row.innerHTML =
+          '<div class="status-avatar-wrap"><div class="status-ring'+(unseen?" unseen":"")+'"><div class="avatar md" style="background:'+colorFor(code)+'">'+initials(c.name)+'</div></div></div>'+
+          '<div class="chat-item-body">'+
+            '<div class="chat-item-name">'+escapeHtml(c.name)+'</div>'+
+            '<div class="chat-item-preview">'+fmtTime(list[list.length-1].ts)+'</div>'+
+          '</div>';
+        row.onclick = function(){ openStatusViewer(code, c.name, list, false); };
+        wrap.appendChild(row);
+      });
+    } else {
+      var empty = document.createElement("div");
+      empty.className = "status-empty";
+      empty.textContent = "Belum ada status dari kontak kamu.";
+      wrap.appendChild(empty);
+    }
+
+    setTimeout(function(){
+      var badge = document.getElementById("st-add-badge");
+      if(badge) badge.onclick = function(e){ e.stopPropagation(); openModal("newStatus"); };
+    },0);
+
+    return wrap;
+  }
+
+  function openStatusViewer(ownerCode, ownerName, list, isMine){
+    state.viewingStatus = {ownerCode:ownerCode, ownerName:ownerName, list:list, index:0, isMine:isMine};
+    renderApp();
+    markCurrentStatusViewed();
+  }
+  function closeStatusViewer(){ state.viewingStatus = null; renderApp(); }
+  function statusStep(dir){
+    var v = state.viewingStatus;
+    if(!v) return;
+    var next = v.index + dir;
+    if(next < 0){ closeStatusViewer(); return; }
+    if(next >= v.list.length){ closeStatusViewer(); return; }
+    v.index = next;
+    renderApp();
+    markCurrentStatusViewed();
+  }
+  async function markCurrentStatusViewed(){
+    var v = state.viewingStatus;
+    if(!v || v.isMine) return;
+    var item = v.list[v.index];
+    if((item.viewedBy||[]).includes(state.myCode)) return;
+    await storeArrayMutate(kStatus(v.ownerCode), function(arr){
+      for(var i=0;i<arr.length;i++){
+        if(arr[i].id === item.id){
+          arr[i].viewedBy = arr[i].viewedBy || [];
+          if(!arr[i].viewedBy.includes(state.myCode)){ arr[i].viewedBy.push(state.myCode); return true; }
+        }
+      }
+      return false;
+    });
+  }
+
+  function buildStatusViewerOverlay(){
+    var v = state.viewingStatus;
+    var overlay = document.createElement("div");
+    overlay.className = "status-overlay";
+    var card = document.createElement("div");
+    card.className = "status-card";
+    var item = v.list[v.index];
+    var segs = v.list.map(function(_,i){ return '<div class="seg'+(i<=v.index?" filled":"")+'"></div>'; }).join("");
+    var bodyHtml = item.type === "image"
+      ? '<img src="'+item.content+'" style="max-width:100%;max-height:100%;border-radius:8px;"/>'
+      : escapeHtml(item.text||"");
+    card.innerHTML =
+      '<div class="status-progress">'+segs+'</div>'+
+      '<div class="status-viewer-header">'+
+        '<div class="avatar sm" style="background:'+colorFor(v.ownerCode)+'">'+initials(v.ownerName)+'</div>'+
+        '<div class="who"><b>'+escapeHtml(v.ownerName)+'</b><span>'+fmtTime(item.ts)+'</span></div>'+
+        '<button id="st-close">'+ICONS.close+'</button>'+
+      '</div>'+
+      '<div class="status-content" style="'+(item.type!=="image" ? "background:"+(item.bgColor||STATUS_COLORS[0]) : "")+'">'+bodyHtml+'</div>'+
+      '<div class="status-nav-zone left" id="st-prev"></div>'+
+      '<div class="status-nav-zone right" id="st-next"></div>';
+    overlay.appendChild(card);
+    overlay.onclick = function(e){ if(e.target===overlay) closeStatusViewer(); };
+    setTimeout(function(){
+      document.getElementById("st-close").onclick = closeStatusViewer;
+      document.getElementById("st-prev").onclick = function(){ statusStep(-1); };
+      document.getElementById("st-next").onclick = function(){ statusStep(1); };
+    },0);
+    return overlay;
+  }
+
+  async function saveNewStatus(){
+    if(state.modalBusy) return;
+    var text = (state.statusTextInput||"").trim();
+    if(!text){ state.modalError = "Tulis dulu isi status kamu."; renderApp(); return; }
+    state.modalBusy = true; renderApp();
+    var item = {id:randCode(10), type:"text", text:text, bgColor:state.statusColor, ts:Date.now(), viewedBy:[]};
+    await storeArrayAppend(kStatus(state.myCode), item);
+    await loadUserData();
+    closeModal();
+    toast("Status berhasil dibuat.");
+  }
+
+  /* ---------- CATATAN ---------- */
+  function buildNotesList(){
+    var wrap = document.createElement("div");
+    wrap.className = "chat-list";
+    var toolbar = document.createElement("div");
+    toolbar.className = "notes-toolbar";
+    toolbar.innerHTML = '<button class="btn btn-primary" id="btn-add-note" style="width:100%;">+ Tambah Catatan</button>';
+    wrap.appendChild(toolbar);
+
+    if(!state.notes.length){
+      var empty = document.createElement("div");
+      empty.className = "empty-list";
+      empty.textContent = "Belum ada catatan. Catatan bersifat pribadi, hanya kamu yang bisa melihatnya.";
+      wrap.appendChild(empty);
+    } else {
+      state.notes.forEach(function(n){
+        var row = document.createElement("div");
+        row.className = "note-row";
+        row.innerHTML =
+          '<div style="flex:1;min-width:0;">'+
+            '<div class="note-text">'+escapeHtml(n.text)+'</div>'+
+            '<div class="note-time">'+fmtDay(n.ts)+' &middot; '+fmtTime(n.ts)+'</div>'+
+          '</div>'+
+          '<div class="note-actions">'+
+            '<button class="icon-btn" data-edit="'+n.id+'" title="Edit" style="width:30px;height:30px;">'+ICONS.pencil+'</button>'+
+            '<button class="icon-btn" data-del="'+n.id+'" title="Hapus" style="width:30px;height:30px;">'+ICONS.trash+'</button>'+
+          '</div>';
+        wrap.appendChild(row);
+      });
+    }
+
+    setTimeout(function(){
+      var addBtn = document.getElementById("btn-add-note");
+      if(addBtn) addBtn.onclick = function(){ state.editingNoteId = null; state.noteTextInput = ""; openModal("editNote"); };
+      wrap.querySelectorAll("[data-edit]").forEach(function(b){
+        b.onclick = function(){
+          var id = b.getAttribute("data-edit");
+          var n = state.notes.filter(function(x){return x.id===id;})[0];
+          state.editingNoteId = id;
+          state.noteTextInput = n ? n.text : "";
+          openModal("editNote");
+        };
+      });
+      wrap.querySelectorAll("[data-del]").forEach(function(b){
+        b.onclick = async function(){
+          if(!confirm("Hapus catatan ini?")) return;
+          await storeArrayMutate(kNotes(state.myCode), function(arr){
+            var idx = arr.findIndex(function(x){return x.id===b.getAttribute("data-del");});
+            if(idx>-1){ arr.splice(idx,1); return true; }
+            return false;
+          });
+          await loadUserData();
+          renderApp();
+        };
+      });
+    },0);
+
+    return wrap;
+  }
+
+  async function saveNote(){
+    if(state.modalBusy) return;
+    var text = (state.noteTextInput||"").trim();
+    if(!text){ state.modalError = "Tulis dulu isi catatannya."; renderApp(); return; }
+    state.modalBusy = true; renderApp();
+    if(state.editingNoteId){
+      await storeArrayMutate(kNotes(state.myCode), function(arr){
+        var n = arr.filter(function(x){return x.id===state.editingNoteId;})[0];
+        if(n){ n.text = text; n.ts = Date.now(); return true; }
+        return false;
+      });
+    } else {
+      await storeArrayAppend(kNotes(state.myCode), {id:randCode(10), text:text, ts:Date.now()});
+    }
+    await loadUserData();
+    closeModal();
+  }
+
   function openChat(it){
     state.activeChat = it;
     state.messages = [];
     state.replyingTo = null;
     state.headerMenuOpen = false;
-    hideMentionDropdown();
     renderApp();
     refreshMessages().then(renderApp);
   }
@@ -1085,18 +1386,6 @@
     return '<a class="file-chip" href="'+m.fileData+'" download="'+escapeHtml(m.fileName)+'">'+
       '<span class="file-chip-icon">'+ICONS.attach+'</span>'+
       '<span class="file-chip-name">'+escapeHtml(m.fileName)+'</span></a>';
-  }
-
-  function renderMessageText(text, mentions){
-    var escaped = escapeHtml(text);
-    if(mentions && mentions.length){
-      mentions.forEach(function(mention){
-        var name = mention.name;
-        var regex = new RegExp('@' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-        escaped = escaped.replace(regex, '<span class="mention-highlight">@' + escapeHtml(name) + '</span>');
-      });
-    }
-    return escaped;
   }
 
   function buildMessagesInnerHTML(){
@@ -1118,7 +1407,7 @@
       } else if(isSticker){
         bodyHtml = '<span class="sticker-img">'+escapeHtml(m.text)+'</span>';
       } else {
-        bodyHtml = '<span class="msg-text">'+renderMessageText(m.text, m.mentions)+'</span>';
+        bodyHtml = '<span class="msg-text">'+escapeHtml(m.text)+'</span>';
       }
       var quoteHtml = m.replyTo ? '<div class="reply-quote"><b>'+escapeHtml(m.replyTo.name)+'</b>'+escapeHtml(m.replyTo.preview)+'</div>' : "";
       var actionsHtml =
@@ -1207,7 +1496,7 @@
       }
       header.innerHTML =
         '<button class="icon-btn back-btn" id="btn-back">&#8592;</button>'+
-        '<div class="avatar sm" style="background:'+avatarBg(state.activeChat.code, state.activeChat.title)+'">'+avatarInner(state.activeChat.code, state.activeChat.title)+'</div>'+
+        '<div class="avatar sm" style="background:'+colorFor(state.activeChat.code||state.activeChat.groupId)+'">'+initials(state.activeChat.title)+'</div>'+
         '<div class="chat-header-info">'+
           '<div class="chat-header-name">'+escapeHtml(state.activeChat.title)+'</div>'+
           '<div class="chat-header-sub">'+escapeHtml(state.activeChat.sub||"")+'</div>'+
@@ -1336,10 +1625,7 @@
         var chatIdForDraft = state.activeChat.id;
         var input = document.getElementById("msg-input");
         var sendBtn = document.getElementById("btn-send");
-        input.oninput = function(e){
-          state.draftMessages[chatIdForDraft] = e.target.value;
-          handleMentionInput(input, chatIdForDraft);
-        };
+        input.oninput = function(e){ state.draftMessages[chatIdForDraft] = e.target.value; };
         function doSend(){
           var txt = input.value.trim();
           if(!txt) return;
@@ -1390,6 +1676,8 @@
     toast(it.type === "group" ? "Kamu keluar dari grup." : "Obrolan dihapus dari daftar kamu.");
   }
 
+  var MAX_FILE_BYTES = 700 * 1024;
+
   function handleFileSelected(f){
     if(!state.activeChat) return;
     if(f.size > MAX_FILE_BYTES){
@@ -1416,8 +1704,7 @@
 
   async function sendMessage(text, replyTo){
     var chat = state.activeChat;
-    var mentions = extractMentions(text);
-    var msg = {id:randCode(10), from:state.myCode, fromName:state.myName, text:text, ts:Date.now(), delivered:false, read:false, replyTo:replyTo||null, mentions:mentions.length > 0 ? mentions : null};
+    var msg = {id:randCode(10), from:state.myCode, fromName:state.myName, text:text, ts:Date.now(), delivered:false, read:false, replyTo:replyTo||null};
     state.messages.push(msg);
     renderApp();
     var ok = await storeArrayAppend(kChat(chat.id), msg);
@@ -1425,108 +1712,14 @@
     refreshMessages().then(renderApp);
   }
 
-  function extractMentions(text){
-    var mentions = [];
-    if(!state.activeChat) return mentions;
-    if(state.activeChat.type === "group"){
-      var group = state.groups[state.activeChat.groupId];
-      if(group){
-        group.members.forEach(function(code){
-          if(code === state.myCode) return;
-          var name = getDisplayName(code);
-          if(text.includes("@"+name)){
-            mentions.push({code: code, name: name});
-          }
-        });
-      }
-    } else {
-      var contactName = state.activeChat.title;
-      if(text.includes("@"+contactName)){
-        mentions.push({code: state.activeChat.code, name: contactName});
-      }
-    }
-    return mentions;
-  }
-
-  function getDisplayName(code){
-    var contact = state.contacts.find(function(c){ return c.code === code; });
-    return contact ? contact.name : code;
-  }
-
-  function handleMentionInput(input, chatId){
-    var text = input.value;
-    var cursorPos = input.selectionStart;
-    var textBeforeCursor = text.substring(0, cursorPos);
-    var atIndex = textBeforeCursor.lastIndexOf("@");
-    if(atIndex !== -1){
-      var query = textBeforeCursor.substring(atIndex + 1);
-      if(!query.includes(" ") && query.length <= 20){
-        showMentionDropdown(input, chatId, query, atIndex);
-        return;
-      }
-    }
-    hideMentionDropdown();
-  }
-
-  function showMentionDropdown(input, chatId, query, atIndex){
-    if(!state.activeChat) return;
-    var members = [];
-    if(state.activeChat.type === "group"){
-      var group = state.groups[state.activeChat.groupId];
-      if(group){
-        group.members.forEach(function(code){
-          if(code === state.myCode) return;
-          var name = getDisplayName(code);
-          members.push({code: code, name: name});
-        });
-      }
-    } else {
-      members.push({code: state.activeChat.code, name: state.activeChat.title});
-    }
-    var filtered = members.filter(function(m){
-      return m.name.toLowerCase().includes(query.toLowerCase());
-    });
-    if(filtered.length === 0){
-      hideMentionDropdown();
-      return;
-    }
-    var existing = document.querySelector(".mention-dropdown");
-    if(existing) existing.remove();
-    var dropdown = document.createElement("div");
-    dropdown.className = "mention-dropdown";
-    filtered.forEach(function(m){
-      var item = document.createElement("div");
-      item.className = "mention-item";
-      var photo = state.photoMap[m.code];
-      var inner = photo ? '<img src="'+photo+'" style="width:30px;height:30px;border-radius:50%;object-fit:cover;"/>' : '<div class="avatar sm" style="background:'+colorFor(m.code)+'">'+initials(m.name)+'</div>';
-      item.innerHTML = inner + '<span>'+escapeHtml(m.name)+'</span>';
-      item.onclick = function(){
-        var currentText = input.value;
-        var newText = currentText.substring(0, atIndex) + "@" + m.name + " " + currentText.substring(input.selectionStart);
-        input.value = newText;
-        state.draftMessages[chatId] = newText;
-        hideMentionDropdown();
-        input.focus();
-      };
-      dropdown.appendChild(item);
-    });
-    document.body.appendChild(dropdown);
-    state.mentionDropdown = dropdown;
-  }
-
-  function hideMentionDropdown(){
-    if(state.mentionDropdown){
-      state.mentionDropdown.remove();
-      state.mentionDropdown = null;
-    }
-  }
-
   /* ---------- EMOJI & STICKER PANELS ---------- */
   function openEmojiPanel(){
     if(!state.activeChat) return;
     if(document.querySelector(".emoji-panel")) return;
+
     var panel = document.createElement("div");
     panel.className = "emoji-panel";
+
     EMOJIS.forEach(function(emoji){
       var btn = document.createElement("button");
       btn.className = "emoji-btn";
@@ -1543,7 +1736,9 @@
       };
       panel.appendChild(btn);
     });
+
     document.body.appendChild(panel);
+
     function closePanelHandler(e){
       if(!panel.contains(e.target)){
         panel.remove();
@@ -1558,8 +1753,10 @@
   function openStickerPanel(){
     if(!state.activeChat) return;
     if(document.querySelector(".sticker-panel")) return;
+
     var panel = document.createElement("div");
     panel.className = "sticker-panel";
+
     STICKERS.forEach(function(emoji){
       var btn = document.createElement("button");
       btn.className = "sticker-btn";
@@ -1571,7 +1768,9 @@
       };
       panel.appendChild(btn);
     });
+
     document.body.appendChild(panel);
+
     function closePanelHandler(e){
       if(!panel.contains(e.target)){
         panel.remove();
@@ -1586,11 +1785,23 @@
   async function sendSticker(emoji){
     var chat = state.activeChat;
     var replyTo = state.replyingTo; state.replyingTo = null;
-    var msg = {id: randCode(10), from: state.myCode, fromName: state.myName, text: emoji, ts: Date.now(), delivered: false, read: false, type: "sticker", replyTo: replyTo || null};
+    var msg = {
+      id: randCode(10),
+      from: state.myCode,
+      fromName: state.myName,
+      text: emoji,
+      ts: Date.now(),
+      delivered: false,
+      read: false,
+      type: "sticker",
+      replyTo: replyTo || null
+    };
     state.messages.push(msg);
     renderApp();
     var ok = await storeArrayAppend(kChat(chat.id), msg);
-    if(!ok){ toast("Gagal mengirim sticker. Jaringan bermasalah?"); }
+    if(!ok){
+      toast("Gagal mengirim sticker. Jaringan bermasalah?");
+    }
     refreshMessages().then(renderApp);
   }
 
@@ -1602,7 +1813,13 @@
     state.pickCode = "";
     state.groupNameInput = "";
     state.groupPicked = {};
-    state.modalGroupId = ctx && ctx.groupId ? ctx.groupId : null;
+    if(name === "newStatus"){
+      state.statusTextInput = "";
+      state.statusColor = STATUS_COLORS[0];
+    }
+    if(name === "addMembers"){
+      state.modalGroupId = ctx && ctx.groupId;
+    }
     renderApp();
   }
   function closeModal(){ state.modal = null; state.modalBusy = false; renderApp(); }
@@ -1629,7 +1846,7 @@
       var rows = state.contacts.map(function(c){
         var checked = state.groupPicked[c.code] ? "checked" : "";
         return '<label class="contact-pick-row"><input type="checkbox" data-code="'+escapeHtml(c.code)+'" class="grp-pick" '+checked+'/>'+
-          '<div class="avatar sm" style="background:'+avatarBg(c.code, c.name)+'">'+avatarInner(c.code, c.name)+'</div><div>'+escapeHtml(c.name)+' <span style="color:#8696a0;font-size:12px">#'+escapeHtml(c.code)+'</span></div></label>';
+          '<div class="avatar sm" style="background:'+colorFor(c.code)+'">'+initials(c.name)+'</div><div>'+escapeHtml(c.name)+' <span style="color:#8696a0;font-size:12px">#'+escapeHtml(c.code)+'</span></div></label>';
       }).join("");
       modal.innerHTML =
         '<div class="modal-header"><span>Grup Baru</span><button id="m-close">'+ICONS.close+'</button></div>'+
@@ -1641,29 +1858,46 @@
         '</div>'+
         '<div class="modal-footer"><button class="btn btn-secondary" id="m-cancel">Batal</button><button class="btn btn-primary" id="m-save" '+(state.modalBusy?"disabled":"")+'>Buat Grup</button></div>';
     } else if(state.modal === "profile"){
-      var photoHtml = state.myPhoto 
-        ? '<img src="'+state.myPhoto+'" style="width:100%;height:100%;object-fit:cover;"/>' 
-        : initials(state.myName);
       modal.innerHTML =
         '<div class="modal-header"><span>Profil Saya</span><button id="m-close">'+ICONS.close+'</button></div>'+
         '<div class="modal-body" style="text-align:center;">'+
-          '<div class="profile-photo-wrap">'+
-            '<div class="avatar lg" style="background:'+(state.myPhoto?'transparent':colorFor(state.myCode))+'">'+photoHtml+'</div>'+
-            '<div class="profile-photo-edit-badge" id="m-change-photo">'+ICONS.camera+'</div>'+
-          '</div>'+
-          '<input type="file" id="profile-photo-input" style="display:none" accept="image/*"/>'+
+          '<div class="avatar lg" style="margin:0 auto 14px;background:'+colorFor(state.myCode)+'">'+initials(state.myName)+'</div>'+
           '<div style="font-size:17px;font-weight:600;margin-bottom:4px;">'+escapeHtml(state.myName)+'</div>'+
           '<div class="muted-note" style="margin-bottom:14px;">Nomor ini fungsinya seperti nomor telepon di WhatsApp asli — simpan baik-baik, dan bagikan ke orang lain supaya mereka bisa menambahkanmu sebagai kontak. Login berikutnya cukup pakai email kamu.</div>'+
           '<div class="copy-row"><div class="code-generated">'+escapeHtml(state.myCode)+'</div><button class="btn btn-secondary" id="m-copy">Salin</button></div>'+
         '</div>'+
         '<div class="modal-footer"><button class="btn btn-secondary" id="m-logout">Keluar</button><button class="btn btn-primary" id="m-cancel">Tutup</button></div>';
+    } else if(state.modal === "newStatus"){
+      var swatches = STATUS_COLORS.map(function(c){
+        return '<div class="color-swatch'+(state.statusColor===c?" selected":"")+'" data-color="'+c+'" style="background:'+c+'"></div>';
+      }).join("");
+      modal.innerHTML =
+        '<div class="modal-header"><span>Buat Status Teks</span><button id="m-close">'+ICONS.close+'</button></div>'+
+        '<div class="modal-body">'+
+          '<div class="status-text-preview" id="st-preview" style="background:'+state.statusColor+'">'+(escapeHtml(state.statusTextInput)||"Tulis sesuatu...")+'</div>'+
+          '<div class="field" style="margin-top:14px;"><label>Isi status</label><textarea id="st-text" class="status-textarea" maxlength="140" placeholder="Apa yang sedang kamu pikirkan?">'+escapeHtml(state.statusTextInput)+'</textarea></div>'+
+          '<label style="font-size:12.5px;color:var(--text-muted);">Warna latar</label>'+
+          '<div class="color-swatch-row">'+swatches+'</div>'+
+          (state.modalError ? '<div class="err-msg">'+escapeHtml(state.modalError)+'</div>' : '')+
+          '<div class="muted-note">Status akan otomatis hilang setelah 24 jam, dan hanya terlihat oleh kontakmu.</div>'+
+        '</div>'+
+        '<div class="modal-footer"><button class="btn btn-secondary" id="m-cancel">Batal</button><button class="btn btn-primary" id="m-save" '+(state.modalBusy?"disabled":"")+'>Bagikan</button></div>';
+    } else if(state.modal === "editNote"){
+      modal.innerHTML =
+        '<div class="modal-header"><span>'+(state.editingNoteId?"Edit Catatan":"Catatan Baru")+'</span><button id="m-close">'+ICONS.close+'</button></div>'+
+        '<div class="modal-body">'+
+          '<div class="field"><label>Isi catatan</label><textarea id="note-text" class="status-textarea" style="min-height:120px;" placeholder="Tulis catatan pribadi kamu di sini...">'+escapeHtml(state.noteTextInput)+'</textarea></div>'+
+          (state.modalError ? '<div class="err-msg">'+escapeHtml(state.modalError)+'</div>' : '')+
+          '<div class="muted-note">Catatan ini bersifat pribadi, tidak dikirim ke siapapun.</div>'+
+        '</div>'+
+        '<div class="modal-footer"><button class="btn btn-secondary" id="m-cancel">Batal</button><button class="btn btn-primary" id="m-save" '+(state.modalBusy?"disabled":"")+'>Simpan</button></div>';
     } else if(state.modal === "addMembers"){
       var grp = state.groups[state.modalGroupId];
       var candidates = state.contacts.filter(function(c){ return !grp || grp.members.indexOf(c.code) === -1; });
       var rows2 = candidates.map(function(c){
         var checked = state.groupPicked[c.code] ? "checked" : "";
         return '<label class="contact-pick-row"><input type="checkbox" data-code="'+escapeHtml(c.code)+'" class="grp-pick" '+checked+'/>'+
-          '<div class="avatar sm" style="background:'+avatarBg(c.code, c.name)+'">'+avatarInner(c.code, c.name)+'</div><div>'+escapeHtml(c.name)+' <span style="color:#8696a0;font-size:12px">#'+escapeHtml(c.code)+'</span></div></label>';
+          '<div class="avatar sm" style="background:'+colorFor(c.code)+'">'+initials(c.name)+'</div><div>'+escapeHtml(c.name)+' <span style="color:#8696a0;font-size:12px">#'+escapeHtml(c.code)+'</span></div></label>';
       }).join("");
       modal.innerHTML =
         '<div class="modal-header"><span>Tambah Anggota</span><button id="m-close">'+ICONS.close+'</button></div>'+
@@ -1709,27 +1943,28 @@
           if(state.pollHandle) clearInterval(state.pollHandle);
           location.reload();
         };
-        var changePhotoBtn = document.getElementById("m-change-photo");
-        if(changePhotoBtn) changePhotoBtn.onclick = function(){
-          var photoInput = document.getElementById("profile-photo-input");
-          photoInput.click();
-          photoInput.onchange = function(e){
-            var file = e.target.files[0];
-            if(!file) return;
-            if(file.size > 150 * 1024){
-              toast("Foto terlalu besar (maksimal 150KB).");
-              return;
-            }
-            resizeImageToDataUrl(file, 200, "image/jpeg", 0.8, true, function(dataUrl){
-              if(dataUrl){
-                state.myPhoto = dataUrl;
-                saveProfilePhoto(dataUrl);
-              } else {
-                toast("Gagal memproses foto.");
-              }
-            });
-          };
+      } else if(state.modal === "newStatus"){
+        var stText = document.getElementById("st-text");
+        var stPreview = document.getElementById("st-preview");
+        stText.oninput = function(e){
+          state.statusTextInput = e.target.value;
+          if(stPreview) stPreview.textContent = e.target.value || "Tulis sesuatu...";
         };
+        document.querySelectorAll(".color-swatch").forEach(function(sw){
+          sw.onclick = function(){
+            state.statusColor = sw.getAttribute("data-color");
+            document.querySelectorAll(".color-swatch").forEach(function(s){ s.classList.remove("selected"); });
+            sw.classList.add("selected");
+            if(stPreview) stPreview.style.background = state.statusColor;
+          };
+        });
+        document.getElementById("m-save").onclick = saveNewStatus;
+        stText.focus();
+      } else if(state.modal === "editNote"){
+        var noteText = document.getElementById("note-text");
+        noteText.oninput = function(e){ state.noteTextInput = e.target.value; };
+        document.getElementById("m-save").onclick = saveNote;
+        noteText.focus();
       } else if(state.modal === "addMembers"){
         document.querySelectorAll(".grp-pick").forEach(function(cb){
           cb.onchange = function(e){ state.groupPicked[e.target.getAttribute("data-code")] = e.target.checked; };
@@ -1739,34 +1974,6 @@
     },0);
 
     return overlay;
-  }
-
-  async function saveProfilePhoto(dataUrl){
-    var profile = await storeGet(kUser(state.myCode));
-    if(!profile){
-      profile = {code: state.myCode, name: state.myName, email: ""};
-    }
-    profile.profilePic = dataUrl;
-    await storeSet(kUser(state.myCode), profile);
-    
-    var myContacts = await storeGet(kContacts(state.myCode));
-    if(myContacts){
-      for(var i = 0; i < myContacts.length; i++){
-        var c = myContacts[i];
-        var otherContacts = await storeGet(kContacts(c.code));
-        if(otherContacts){
-          var idx = otherContacts.findIndex(function(oc){ return oc.code === state.myCode; });
-          if(idx !== -1){
-            otherContacts[idx].profilePic = dataUrl;
-            await storeSet(kContacts(c.code), otherContacts);
-          }
-        }
-      }
-    }
-    
-    await loadUserData();
-    closeModal();
-    toast("Foto profil berhasil diubah.");
   }
 
   async function saveAddContact(){
@@ -1787,8 +1994,8 @@
       renderApp(); return;
     }
 
-    await storeArrayAppendIfAbsent(kContacts(state.myCode), {code:code, name:target.name, profilePic:target.profilePic || null}, function(c){ return c.code===code; });
-    await storeArrayAppendIfAbsent(kContacts(code), {code:state.myCode, name:state.myName, profilePic:state.myPhoto || null}, function(c){ return c.code===state.myCode; });
+    await storeArrayAppendIfAbsent(kContacts(state.myCode), {code:code, name:target.name}, function(c){ return c.code===code; });
+    await storeArrayAppendIfAbsent(kContacts(code), {code:state.myCode, name:state.myName}, function(c){ return c.code===state.myCode; });
 
     await loadUserData();
     closeModal();
@@ -1841,25 +2048,9 @@
   }
 
   /* ============== BOOT ============== */
+  // MODIFIKASI: tryAutoLogin langsung ke login, tanpa memeriksa sesi
   async function tryAutoLogin(){
-    var saved = null;
-    try{ saved = JSON.parse(localStorage.getItem(SESSION_KEY)); }catch(e){}
-    if(saved && saved.code){
-      var profile = await storeGet(kUser(saved.code));
-      if(profile){
-        state.myCode = saved.code;
-        state.myName = profile.name || "Pengguna";
-        state.myPhoto = profile.profilePic || null;
-        await storeSet(kPresence(state.myCode), Date.now());
-        await loadUserData();
-        state.screen = "app";
-        render();
-        ensureNotifPermission();
-        startPolling();
-        return;
-      }
-      clearSession();
-    }
+    // Selalu minta login ulang, tidak auto-login
     state.screen = "login";
     render();
   }
